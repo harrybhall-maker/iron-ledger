@@ -1,7 +1,7 @@
 /* Iron Ledger offline cache. The app shell is served from the cache first, so it
    opens with no signal; when there is signal, a fresh copy is fetched in the
    background and used next launch. */
-const CACHE = 'ironledger-2026.11.16-2';
+const CACHE = 'ironledger-2026.11.16-3';
 const ASSETS = [
   './',
   'index.html',
@@ -22,7 +22,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); })
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS.map(function (u) { return new Request(u, { cache: 'reload' }); })); })
     .then(function () { return self.skipWaiting(); }));
 });
 
@@ -45,7 +45,7 @@ self.addEventListener('fetch', function (e) {
 
   e.respondWith(caches.open(CACHE).then(function (c) {
     return c.match(key, { ignoreSearch: true }).then(function (hit) {
-      const fresh = fetch(req).then(function (res) {
+      const fresh = fetch(req, { cache: 'no-cache' }).then(function (res) {
         if (res && res.ok) c.put(key, res.clone());
         return res;
       }).catch(function () { return null; });
