@@ -157,8 +157,20 @@
   .grp input { width: 100%; min-width: 0; border: none; text-align: center; background: var(--surface);
     font-family: "IBM Plex Mono", monospace; font-size: 16px; color: var(--ink); padding: 0 2px; }
   .rmset { color: var(--ink-faint); font-size: 16px; min-height: 42px; }
+  .sn { border: none; background: none; padding: 0; min-height: 42px; width: 22px; cursor: pointer; }
+  .set.k-m, .set.k-d { margin-left: 10px; grid-template-columns: 22px 1fr 1fr 30px; }
+  .set.k-m .sn { color: var(--pull); font-weight: 600; }
+  .set.k-d .sn { color: var(--accent); font-weight: 600; }
+  .set.k-m .grp { border-color: color-mix(in srgb, var(--pull) 45%, var(--line)); }
+  .set.k-d .grp { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .myochip { margin-left: auto; }
+  .modebar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .modebar .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .modebar .key { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); }
+  .modebar .key b { color: var(--pull); } .modebar .key i { color: var(--accent); font-style: normal; font-weight: 600; }
 
   .cfoot { display: flex; gap: 8px; margin-top: 10px; }
+  .addset.kind { flex: .8; }
   .addset, .skipbtn { flex: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-soft); background: var(--surface-alt); }
   .skipbtn.on { background: var(--bad); border-color: var(--bad); color: var(--accent-ink); }
 
@@ -599,7 +611,7 @@ function prevEntry(exKey, beforeDate, variantId){    // searches every day, so m
 }
 function topW(sets){
   let m = null;
-  sets.forEach(function(s){ if (s.r != null && s.w != null && (m===null || s.w > m)) m = s.w; });
+  sets.forEach(function(s){ if (s.k !== 'd' && s.r != null && s.w != null && (m===null || s.w > m)) m = s.w; });
   return m;
 }
 
@@ -620,7 +632,7 @@ function loggedByMuscle(wkStart){
     for (const k in s.ex){
       const e = s.ex[k];
       if (e.skip) continue;
-      const n = (e.sets||[]).filter(function(x){ return x.r != null; }).length;
+      const n = (e.sets||[]).reduce(function(a, x){ return x.r == null ? a : a + setWeight(x); }, 0);
       if (!n) continue;
       const it = itemByKey(k);
       const m = it ? it.m : 'Other';
@@ -630,6 +642,10 @@ function loggedByMuscle(wkStart){
   return out;
 }
 
+/* Myo mini-sets count as about 2/3 of a set and drop sets about 1/2 */
+function setWeight(s){ return s.k === 'm' ? 2/3 : s.k === 'd' ? 0.5 : 1; }
+function fmtN(n){ return String(Math.round(n * 10) / 10); }
+
 /* ---------- Format ---------- */
 function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtW(w, variant){
@@ -638,8 +654,19 @@ function fmtW(w, variant){
   return String(w);
 }
 function fmtSets(sets, variant){
-  return sets.filter(function(s){ return s.r != null; })
-    .map(function(s){ return fmtW(s.w, variant) + '×' + s.r; }).join(' · ');
+  const done = sets.filter(function(s){ return s.r != null; });
+  let out = '';
+  done.forEach(function(s, i){
+    const prev = done[i-1];
+    if (s.k === 'm'){
+      out += (i ? ' + ' : '') + 'm' + (prev && prev.w === s.w ? '' : fmtW(s.w, variant) + '×') + s.r;
+    } else if (s.k === 'd'){
+      out += (i ? ' ↘ ' : '↘ ') + fmtW(s.w, variant) + '×' + s.r;
+    } else {
+      out += (i ? ' · ' : '') + fmtW(s.w, variant) + '×' + s.r;
+    }
+  });
+  return out;
 }
 
 /* ---------- Cards ---------- */
@@ -656,10 +683,16 @@ function chosenVariantId(day, item){
 }
 function prefillRows(item, variant){
   const prev = prevEntry(item.k, todayKey(), variant.id);
-  if (prev) return prev.sets.map(function(s){ return { w:s.w, r:null }; });
+  if (prev) return prev.sets.map(function(s){ return s.k ? { w:s.w, r:null, k:s.k } : { w:s.w, r:null }; });
   const rows = [];
   for (let i=0;i<item.s;i++) rows.push({ w: variant.w, r:null });
   return rows;
+}
+function isMyo(st){ return (st.sets||[]).some(function(s){ return s.k === 'm'; }); }
+function dropW(w){
+  if (w == null || w <= 0) return w;
+  const step = w >= 10 ? 2.5 : 1.25;
+  return Math.max(step, Math.round((w * 0.75) / step) * step);
 }
 function ensureEx(day, item){
   const sess = curSession(day);
@@ -669,11 +702,21 @@ function ensureEx(day, item){
   }
   return sess.ex[item.k];
 }
-function setRowHTML(row, i, total){
+function setLabel(sets, i){
+  const s = sets[i];
+  if (s.k === 'm') return 'm';
+  if (s.k === 'd') return '↘';
+  let n = 0;
+  for (let j=0;j<=i;j++) if (!sets[j].k) n++;
+  return String(n);
+}
+function setRowHTML(row, i, total, sets){
   const wv = row.w == null ? '' : row.w;
   const rv = row.r == null ? '' : row.r;
-  return '<div class="set" data-i="'+i+'">'
-    + '<span class="sn">'+(i+1)+'</span>'
+  const kind = row.k || '';
+  const nm = kind === 'm' ? 'myo mini-set' : kind === 'd' ? 'drop set' : 'normal set';
+  return '<div class="set'+(kind ? ' k-'+kind : '')+'" data-i="'+i+'" data-kind="'+kind+'">'
+    + '<button type="button" class="sn" data-act="cyclek" aria-label="'+nm+', tap to change type">'+setLabel(sets, i)+'</button>'
     + '<div class="grp"><button type="button" data-act="wdec" aria-label="less weight">−</button>'
     + '<input class="win" type="text" inputmode="decimal" autocomplete="off" value="'+wv+'">'
     + '<button type="button" data-act="winc" aria-label="more weight">+</button></div>'
@@ -717,8 +760,10 @@ function cardHTML(day, item, idx, total){
   let body;
   if (!st.skip){
     body = chips + '<div class="hint">'+hint+'</div>'
+      + '<div class="modebar"><button type="button" class="vchip'+(isMyo(st)?' on':'')+'" data-act="myomode">Myo-reps</button>'
+      + '<span class="key">tap # → <b>m</b> myo · <i>↘</i> drop</span></div>'
       + '<div class="sethead"><span></span><span>weight ('+esc(variant.u)+')</span><span>reps</span><span></span></div>'
-      + st.sets.map(function(r,i){ return setRowHTML(r, i, st.sets.length); }).join('');
+      + st.sets.map(function(r,i){ return setRowHTML(r, i, st.sets.length, st.sets); }).join('');
   } else {
     body = '<div class="hint">Marked not done for today — tap below to undo.</div>';
   }
@@ -728,7 +773,9 @@ function cardHTML(day, item, idx, total){
     + '<span class="target">target <b>'+esc(target)+'</b><span class="mg">'+esc(item.m)+'</span></span></div>'
     + body
     + '<div class="cfoot">'
-    + (st.skip ? '' : '<button type="button" class="addset" data-act="addset">+ set</button>')
+    + (st.skip ? '' : '<button type="button" class="addset" data-act="addset">+ set</button>'
+        + '<button type="button" class="addset kind" data-act="addmyo">+ myo</button>'
+        + '<button type="button" class="addset kind" data-act="adddrop">+ drop</button>')
     + '<button type="button" class="skipbtn'+(st.skip?' on':'')+'" data-act="skip">'+(st.skip?'Not done ✓':'Not done')+'</button>'
     + '</div></div>';
 }
@@ -802,7 +849,7 @@ function weeksHTML(){
   let totalDone = 0, totalPlan = 0;
   muscles.forEach(function(m){ totalDone += (logged[m]||0); totalPlan += (planned[m]||0); });
 
-  html += '<div class="volblock"><div class="volhead"><span>Sets by muscle group</span><span>'+totalDone+' / '+totalPlan+'</span></div>';
+  html += '<div class="volblock"><div class="volhead"><span>Sets by muscle group</span><span>'+fmtN(totalDone)+' / '+totalPlan+'</span></div>';
   if (!muscles.length){
     html += '<p class="vnone">Nothing planned or logged yet.</p>';
   } else {
@@ -810,11 +857,11 @@ function weeksHTML(){
       const done = logged[m] || 0, plan = planned[m] || 0;
       const pct = plan ? Math.min(100, Math.round(done/plan*100)) : (done ? 100 : 0);
       html += '<div class="vrowm"><div class="vtop"><span class="mn">'+esc(m)+'</span>'
-        + '<span class="vn">'+done+' <i>/ '+plan+'</i></span></div>'
+        + '<span class="vn">'+fmtN(done)+' <i>/ '+plan+'</i></span></div>'
         + '<div class="bar"><i class="'+(plan && done>=plan ? 'full' : '')+'" style="width:'+pct+'%"></i></div></div>';
     });
   }
-  html += '</div>';
+  html += '<p class="note">Myo mini-sets count as ⅔ of a set, drop sets as ½.</p></div>';
 
   const wkEnd = shiftWeek(wk, 1);
   const sessions = allSessionsSorted().filter(function(s){ return s.date >= wk && s.date < wkEnd; })
@@ -899,7 +946,7 @@ function historyHTML(){
     + '<div class="bkrow"><button type="button" data-act="bkimport">Import (replaces everything)</button><label class="bkfile">Load backup file<input type="file" id="bkfilein" accept=".json,.txt,application/json,text/plain" hidden></label></div>'
     + '</details>'
     + '<details class="panel"><summary>Where your data is stored</summary>' + diagHTML()
-    + '<p class="note">Your log is stored on this phone only, inside the Home Screen app, and works with no signal. It does not sync to other devices. Every so often, use Save backup file above and keep the file in Files or iCloud Drive. If you delete the Home Screen icon, the log goes with it.</p><p class="note">App version 2026.11.16-1</p>'
+    + '<p class="note">Your log is stored on this phone only, inside the Home Screen app, and works with no signal. It does not sync to other devices. Every so often, use Save backup file above and keep the file in Files or iCloud Drive. If you delete the Home Screen icon, the log goes with it.</p><p class="note">App version 2026.11.16-2</p>'
     + '</details>';
   document.getElementById('view').innerHTML = html;
   const out = document.getElementById('bkout');
@@ -956,7 +1003,9 @@ function commitCard(cardEl){
   if (!st.skip){
     const sets = [];
     cardEl.querySelectorAll('.set').forEach(function(row){
-      sets.push({ w: parseW(row.querySelector('.win').value), r: parseR(row.querySelector('.rin').value) });
+      const o = { w: parseW(row.querySelector('.win').value), r: parseR(row.querySelector('.rin').value) };
+      if (row.dataset.kind) o.k = row.dataset.kind;
+      sets.push(o);
     });
     st.sets = sets;
   }
@@ -1212,11 +1261,37 @@ document.getElementById('view').addEventListener('click', function(ev){
     curSession(day).u = Date.now(); dirty = true; persistLocal();
     renderDay(day); refreshPill(); return;
   }
-  if (act === 'addset'){
+  if (act === 'addset' || act === 'addmyo' || act === 'adddrop'){
     commitCard(card);
     const last = st.sets[st.sets.length-1];
-    st.sets.push({ w: last ? last.w : findVar(item, st.v).w, r: null });
-    renderDay(day); return;
+    const w = last ? last.w : findVar(item, st.v).w;
+    if (act === 'addset') st.sets.push({ w: w, r: null });
+    if (act === 'addmyo') st.sets.push({ w: w, r: null, k: 'm' });
+    if (act === 'adddrop') st.sets.push({ w: dropW(w), r: null, k: 'd' });
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'cyclek'){
+    commitCard(card);
+    const i = parseInt(btn.closest('.set').dataset.i, 10);
+    const s = st.sets[i];
+    const next = !s.k ? 'm' : s.k === 'm' ? 'd' : '';
+    if (next) s.k = next; else delete s.k;
+    if (next === 'd' && !s.r && i > 0 && s.w === st.sets[i-1].w) s.w = dropW(s.w);
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'myomode'){
+    commitCard(card);
+    if (isMyo(st)){
+      st.sets.forEach(function(s){ if (s.k === 'm') delete s.k; });
+    } else {
+      /* first set stays the starter; the remaining planned sets become mini-sets */
+      st.sets.forEach(function(s, i){ if (i > 0 && !s.k && s.r == null) s.k = 'm'; });
+      if (st.sets.length < 2) st.sets.push({ w: st.sets[0] ? st.sets[0].w : findVar(item, st.v).w, r: null, k: 'm' });
+    }
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
   }
   if (act === 'rmset'){
     commitCard(card);
