@@ -1,7 +1,7 @@
 /* Iron Ledger offline cache. The app shell is served from the cache first, so it
    opens with no signal; when there is signal, a fresh copy is fetched in the
    background and used next launch. */
-const CACHE = 'ironledger-2026.11.16-3';
+const CACHE = 'ironledger-2026.11.16-4';
 const ASSETS = [
   './',
   'index.html',

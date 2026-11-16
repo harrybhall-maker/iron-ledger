@@ -88,11 +88,8 @@
     flex: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface);
     font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft);
   }
-  nav.tabs button[data-tab="push"].on   { background: var(--push);   border-color: var(--push);   color: var(--accent-ink); }
-  nav.tabs button[data-tab="pull"].on   { background: var(--pull);   border-color: var(--pull);   color: var(--accent-ink); }
-  nav.tabs button[data-tab="legs"].on   { background: var(--legs);   border-color: var(--legs);   color: var(--accent-ink); }
-  nav.tabs button[data-tab="smalls"].on { background: var(--smalls); border-color: var(--smalls); color: var(--accent-ink); }
-  nav.tabs button[data-tab="weeks"].on, nav.tabs button[data-tab="hist"].on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  nav.tabs button.dt.on { background: var(--hue); border-color: var(--hue); color: var(--accent-ink); }
+  nav.tabs button[data-tab="weeks"].on, nav.tabs button[data-tab="hist"].on, nav.tabs button[data-tab="days"].on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
   .tabrow .wd { display: block; font-size: 9px; opacity: .65; letter-spacing: .08em; }
 
   main { max-width: 560px; margin: 0 auto; padding: 14px 14px 30px; }
@@ -116,10 +113,22 @@
 
   .card { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line);
     border-radius: 12px; padding: 12px 12px 10px; margin: 0 0 12px; box-shadow: var(--shadow); }
-  .card[data-hue="push"] { border-left-color: var(--push); }
-  .card[data-hue="pull"] { border-left-color: var(--pull); }
-  .card[data-hue="legs"] { border-left-color: var(--legs); }
-  .card[data-hue="smalls"] { border-left-color: var(--smalls); }
+  .card[data-hue] { border-left-color: var(--hue, var(--line)); }
+  .daylist .drow { display: grid; grid-template-columns: 14px 1fr 92px auto; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--hue); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+  .drow .sw { width: 14px; height: 14px; border-radius: 50%; background: var(--hue); border: none; padding: 0; }
+  .drow input, .drow select, .newday input, .newday select { min-height: 40px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-alt);
+    font: inherit; font-size: 15px; color: var(--ink); padding: 0 10px; min-width: 0; width: 100%; }
+  .drow .acts { display: flex; gap: 4px; }
+  .drow .acts button, .newday button, .gonelist button { min-height: 40px; min-width: 36px; padding: 0 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); font-size: 14px; }
+  .drow .acts button.del { color: var(--bad); }
+  .drow .acts button.del.arm { background: var(--bad); color: var(--accent-ink); border-color: var(--bad); }
+  .drow .meta { grid-column: 2 / -1; font-size: 12px; color: var(--ink-faint); }
+  .newday { display: grid; grid-template-columns: 1fr 92px auto; gap: 8px; margin: 14px 0 6px; }
+  .newday button { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 0 14px; }
+  .gonelist { margin-top: 18px; }
+  .gonelist .grow { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--ink-soft); }
+  .dhead { font-family: "Big Shoulders Display", sans-serif; text-transform: uppercase; font-weight: 800; font-size: 26px; line-height: 1; padding: 2px 4px 10px; }
   .card.skipped { opacity: .55; border-left-style: dashed; }
 
   .editbar { display: flex; align-items: center; gap: 6px; padding-bottom: 9px; margin-bottom: 8px; border-bottom: 1px dashed var(--line); }
@@ -275,15 +284,11 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <div class="tabrow">
-    <button data-tab="push">Push<span class="wd">Mon</span></button>
-    <button data-tab="pull">Pull<span class="wd">Tue</span></button>
-    <button data-tab="legs">Legs<span class="wd">Wed</span></button>
-    <button data-tab="smalls">Smalls<span class="wd">Fri</span></button>
-  </div>
+  <div id="daytabs"></div>
   <div class="tabrow">
     <button data-tab="weeks">Weeks</button>
     <button data-tab="hist">History</button>
+    <button data-tab="days">Days</button>
   </div>
 </nav>
 
@@ -359,8 +364,38 @@ const PROGRAM = {
       { id:'bw', n:'Bodyweight', w:0, u:'kg added', bw:true }, { id:'plate', n:'Holding Plate', w:5, u:'kg added', bw:true } ] },
   ]},
 };
-const DAYS = ['push','pull','legs','smalls'];
-const WEEKDAY_TAB = { 1:'push', 2:'pull', 3:'legs', 5:'smalls' };
+const BUILTIN = ['push','pull','legs','smalls'];
+const HUES = ['#B8441F','#2F5D62','#7A6323','#5A4A72','#3F6E3A','#8A3B5C','#2E4A7A','#6B5B3E'];
+const WDN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let DAYS = BUILTIN.slice();      // active days, in tab order
+function defaultDays(){
+  return [ { id:'push', label:'Push', wd:1, c:0 }, { id:'pull', label:'Pull', wd:2, c:1 },
+           { id:'legs', label:'Legs', wd:3, c:2 }, { id:'smalls', label:'Smalls', wd:5, c:3 } ];
+}
+function dayObj(id){
+  const ds = (state && state.days) || [];
+  for (let i=0;i<ds.length;i++) if (ds[i].id === id) return ds[i];
+  return null;
+}
+function dayLabel(id){ const d = dayObj(id); return d ? d.label : (id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Day'); }
+function dayHue(id){ const d = dayObj(id); return HUES[(d ? d.c : 0) % HUES.length]; }
+function syncDays(){
+  DAYS = state.days.filter(function(d){ return !d.gone; }).map(function(d){ return d.id; });
+}
+function renderTabs(){
+  const box = document.getElementById('daytabs');
+  if (!box) return;
+  let html = '';
+  for (let i=0;i<DAYS.length;i+=4){
+    html += '<div class="tabrow">' + DAYS.slice(i, i+4).map(function(id){
+      const d = dayObj(id);
+      return '<button class="dt" data-tab="'+esc(id)+'" style="--hue:'+dayHue(id)+'">'+esc(d.label)
+        + '<span class="wd">'+(d.wd == null ? '&nbsp;' : WDN[d.wd])+'</span></button>';
+    }).join('') + '</div>';
+  }
+  box.innerHTML = html;
+  if (html) box.lastElementChild.style.marginBottom = '5px';
+}
 
 /* ---------- State ---------- */
 const LSKEY = 'ironledger.v1';
@@ -382,7 +417,7 @@ let swOK = null;
 
 function blankState(){
   return { v:3, savedAt:0, metaU:0, sessions:{}, custom:[], hidden:[], purged:[], dayOf:{},
-           order:{push:[],pull:[],legs:[],smalls:[]} };
+           order:{push:[],pull:[],legs:[],smalls:[]}, days: defaultDays() };
 }
 function normalize(s){
   if (!s || typeof s !== 'object') return blankState();
@@ -390,12 +425,12 @@ function normalize(s){
   // migrate v2 (per-day custom/hidden objects) -> v3 (flat arrays)
   if (s.custom && !Array.isArray(s.custom)){
     const flat = [];
-    DAYS.forEach(function(d){ (s.custom[d] || []).forEach(function(it){ it.nday = d; flat.push(it); }); });
+    BUILTIN.forEach(function(d){ (s.custom[d] || []).forEach(function(it){ it.nday = d; flat.push(it); }); });
     s.custom = flat;
   }
   if (s.hidden && !Array.isArray(s.hidden)){
     const flat = [];
-    DAYS.forEach(function(d){ (s.hidden[d] || []).forEach(function(k){ flat.push(k); }); });
+    BUILTIN.forEach(function(d){ (s.hidden[d] || []).forEach(function(k){ flat.push(k); }); });
     s.hidden = flat;
   }
   if (!Array.isArray(s.custom)) s.custom = [];
@@ -403,10 +438,18 @@ function normalize(s){
   if (!Array.isArray(s.purged)) s.purged = [];
   if (!s.dayOf || typeof s.dayOf !== 'object') s.dayOf = {};
   if (!s.order || typeof s.order !== 'object') s.order = {};
-  DAYS.forEach(function(d){ if (!Array.isArray(s.order[d])) s.order[d] = []; });
+  if (!Array.isArray(s.days) || !s.days.length) s.days = defaultDays();
+  s.days = s.days.filter(function(d){ return d && typeof d.id === 'string' && d.id; });
+  s.days.forEach(function(d, i){
+    if (typeof d.label !== 'string' || !d.label.trim()) d.label = 'Day ' + (i+1);
+    if (!(typeof d.wd === 'number' && d.wd >= 0 && d.wd <= 6)) d.wd = null;
+    if (typeof d.c !== 'number') d.c = i % HUES.length;
+  });
+  const dayIds = s.days.map(function(d){ return d.id; });
+  dayIds.forEach(function(d){ if (!Array.isArray(s.order[d])) s.order[d] = []; });
   s.custom.forEach(function(it){
     if (!it.m) it.m = 'Other';
-    if (!it.nday || DAYS.indexOf(it.nday) < 0) it.nday = 'smalls';
+    if (!it.nday || dayIds.indexOf(it.nday) < 0) it.nday = dayIds[dayIds.length-1];
   });
   if (typeof s.metaU !== 'number') s.metaU = 0;
   if (typeof s.savedAt !== 'number') s.savedAt = 0;
@@ -454,8 +497,9 @@ function rememberTab(){
 }
 function initialTab(){
   try { const t = sessionStorage.getItem(TABKEY); if (t) return t; } catch(e){}
-  const byDay = WEEKDAY_TAB[new Date().getDay()];
-  if (byDay) return byDay;
+  const today = new Date().getDay();
+  const byDay = state.days.filter(function(d){ return !d.gone && d.wd === today; })[0];
+  if (byDay) return byDay.id;
   try { const t = localStorage.getItem(TABKEY); if (t) return t; } catch(e){}
   return 'push';
 }
@@ -475,7 +519,7 @@ function mergeStates(base0, other0){
   }
   if ((O.metaU || 0) > (base.metaU || 0)){
     base.custom = O.custom; base.hidden = O.hidden; base.purged = O.purged;
-    base.dayOf = O.dayOf; base.order = O.order; base.metaU = O.metaU;
+    base.dayOf = O.dayOf; base.order = O.order; base.days = O.days; base.metaU = O.metaU;
   }
   if ((O.savedAt || 0) > (base.savedAt || 0)) base.savedAt = O.savedAt;
   return base;
@@ -501,19 +545,19 @@ function markMeta(){ state.metaU = Date.now(); dirty = true; persistLocal(); }
 /* ---------- Item lookup ---------- */
 function everyItem(){
   const out = [];
-  DAYS.forEach(function(d){ PROGRAM[d].items.forEach(function(it){ out.push(it); }); });
+  BUILTIN.forEach(function(d){ PROGRAM[d].items.forEach(function(it){ out.push(it); }); });
   state.custom.forEach(function(it){ out.push(it); });
   return out;
 }
 function nativeDay(k){
-  for (let i=0;i<DAYS.length;i++){
-    const items = PROGRAM[DAYS[i]].items;
-    for (let j=0;j<items.length;j++) if (items[j].k === k) return DAYS[i];
+  for (let i=0;i<BUILTIN.length;i++){
+    const items = PROGRAM[BUILTIN[i]].items;
+    for (let j=0;j<items.length;j++) if (items[j].k === k) return BUILTIN[i];
   }
   for (let i=0;i<state.custom.length;i++) if (state.custom[i].k === k) return state.custom[i].nday;
   return 'smalls';
 }
-function dayFor(k){ const d = state.dayOf[k]; return (d && DAYS.indexOf(d) >= 0) ? d : nativeDay(k); }
+function dayFor(k){ const d = state.dayOf[k]; return (d && dayObj(d)) ? d : nativeDay(k); }
 function itemByKey(k){
   const all = everyItem();
   for (let i=0;i<all.length;i++) if (all[i].k === k) return all[i];
@@ -747,7 +791,7 @@ function cardHTML(day, item, idx, total){
       + '<button type="button" class="rmex" data-act="rmex">Remove</button></div>'
       + '<div class="moverow"><span class="lbl">Day</span>'
       + DAYS.map(function(d){
-          return '<button type="button" class="movechip'+(d===day?' on':'')+'" data-act="moveday" data-md="'+d+'">'+PROGRAM[d].label+'</button>';
+          return '<button type="button" class="movechip'+(d===day?' on':'')+'" data-act="moveday" data-md="'+d+'">'+esc(dayLabel(d))+'</button>';
         }).join('')
       + '</div>';
   }
@@ -767,7 +811,7 @@ function cardHTML(day, item, idx, total){
   } else {
     body = '<div class="hint">Marked not done for today — tap below to undo.</div>';
   }
-  return '<div class="card'+(st.skip?' skipped':'')+'" data-hue="'+day+'" data-k="'+esc(item.k)+'">'
+  return '<div class="card'+(st.skip?' skipped':'')+'" data-hue="'+esc(day)+'" style="--hue:'+dayHue(day)+'" data-k="'+esc(item.k)+'">'
     + head
     + '<div class="chead"><span class="cname">'+esc(item.n)+'</span>'
     + '<span class="target">target <b>'+esc(target)+'</b><span class="mg">'+esc(item.m)+'</span></span></div>'
@@ -782,7 +826,7 @@ function cardHTML(day, item, idx, total){
 function addFormHTML(day){
   const defT = day === 'legs' ? '12–15' : '8–10';
   return '<div class="addform" id="addform">'
-    + '<h4>New exercise · '+PROGRAM[day].label+'</h4>'
+    + '<h4>New exercise · '+esc(dayLabel(day))+'</h4>'
     + '<div class="fld"><label for="nf_n">Exercise name</label><input id="nf_n" type="text" autocomplete="off" placeholder="e.g. Machine Chest Press"></div>'
     + '<div class="fld"><label for="nf_m">Muscle group (for weekly totals)</label><select id="nf_m">'
       + MUSCLES.map(function(m){ return '<option value="'+esc(m)+'">'+esc(m)+'</option>'; }).join('')
@@ -804,7 +848,7 @@ function addFormHTML(day){
 function removedHTML(day){
   const list = hiddenItems(day);
   if (!list.length) return '';
-  return '<div class="removed"><div class="rmhead">Removed from '+PROGRAM[day].label+'</div>'
+  return '<div class="removed"><div class="rmhead">Removed from '+esc(dayLabel(day))+'</div>'
     + list.map(function(it){
         return '<div class="rmrow"><span>'+esc(it.n)+'</span>'
           + '<button type="button" data-act="restore" data-rk="'+esc(it.k)+'">Restore</button>'
@@ -814,7 +858,7 @@ function removedHTML(day){
 function renderDay(day){
   const items = dayItems(day);
   const planned = items.reduce(function(a,it){ return a + (it.s||0); }, 0);
-  let html = '<div class="dayline"><span class="d">'+PROGRAM[day].label+' Day</span>'
+  let html = '<div class="dayline"><span class="d">'+esc(dayLabel(day))+' Day</span>'
     + '<span class="rt"><span class="wk mono">Wk '+weekNo(todayKey())+' · '+fmtDate(todayKey())+'</span>'
     + '<span class="wk mono">'+planned+' sets planned</span>'
     + '<button type="button" class="editbtn'+(editing?' on':'')+'" data-act="edittoggle">'+(editing?'Done':'Edit list')+'</button></span></div>';
@@ -824,7 +868,7 @@ function renderDay(day){
   if (!items.length) html += '<p class="hnone">No exercises on this day yet — add one below.</p>';
   items.forEach(function(it, i){ html += cardHTML(day, it, i, items.length); });
   html += adding ? addFormHTML(day)
-                 : '<button type="button" class="addex" data-act="addopen">+ Add exercise to '+PROGRAM[day].label+'</button>';
+                 : '<button type="button" class="addex" data-act="addopen">+ Add exercise to '+esc(dayLabel(day))+'</button>';
   if (editing) html += removedHTML(day);
   document.getElementById('view').innerHTML = html;
   if (adding){ const el = document.getElementById('nf_n'); if (el) el.focus(); }
@@ -882,7 +926,7 @@ function weeksHTML(){
           rows += '<div class="hrow"><span class="hdate">'+esc(item.n)+'</span>'
             + '<span class="hsets">'+esc(fmtSets(logged2, variant))+'</span></div>';
         });
-      if (rows) html += '<div class="hblock"><h3>'+PROGRAM[sess.day].label+'<em>'+fmtDate(sess.date)+'</em></h3>'+rows+'</div>';
+      if (rows) html += '<div class="hblock"><h3>'+esc(dayLabel(sess.day))+'<em>'+fmtDate(sess.date)+'</em></h3>'+rows+'</div>';
     });
   }
   document.getElementById('view').innerHTML = html;
@@ -899,9 +943,13 @@ function diagHTML(){
     + '</div>';
 }
 function historyHTML(){
-  const day = histDay;
-  let html = '<div class="hchips">' + DAYS.map(function(d){
-    return '<button type="button" data-act="hday" data-hd="'+d+'" class="'+(d===day?'on':'')+'">'+PROGRAM[d].label+'</button>';
+  let day = histDay;
+  const histDays = DAYS.concat(state.days.filter(function(d){
+    return d.gone && Object.keys(state.sessions).some(function(k){ return state.sessions[k].day === d.id && sessionHasContent(state.sessions[k]); });
+  }).map(function(d){ return d.id; }));
+  if (histDays.indexOf(day) < 0){ day = histDay = histDays[0] || day; }
+  let html = '<div class="hchips">' + histDays.map(function(d){
+    return '<button type="button" data-act="hday" data-hd="'+d+'" class="'+(d===day?'on':'')+'">'+esc(dayLabel(d))+'</button>';
   }).join('') + '</div>';
 
   const items = everyItem().filter(function(it){ return dayFor(it.k) === day && !isPurged(it.k); });
@@ -936,7 +984,7 @@ function historyHTML(){
     });
     if (rows) any += '<div class="hblock"><h3>'+esc(item.n)+(isHidden(item.k)?'<em>removed</em>':'')+'</h3>'+rows+'</div>';
   });
-  html += any || '<p class="hnone">Nothing logged for '+PROGRAM[day].label+' yet — your first saved session lands here.</p>';
+  html += any || '<p class="hnone">Nothing logged for '+esc(dayLabel(day))+' yet — your first saved session lands here.</p>';
 
   html += '<details class="panel"><summary>Backup &amp; restore</summary>'
     + '<p class="note">Copy this somewhere safe (Notes, an email to yourself) — it is your whole log as text, and can be pasted back in below.</p>'
@@ -946,18 +994,60 @@ function historyHTML(){
     + '<div class="bkrow"><button type="button" data-act="bkimport">Import (replaces everything)</button><label class="bkfile">Load backup file<input type="file" id="bkfilein" accept=".json,.txt,application/json,text/plain" hidden></label></div>'
     + '</details>'
     + '<details class="panel"><summary>Where your data is stored</summary>' + diagHTML()
-    + '<p class="note">Your log is stored on this phone only, inside the Home Screen app, and works with no signal. It does not sync to other devices. Every so often, use Save backup file above and keep the file in Files or iCloud Drive. If you delete the Home Screen icon, the log goes with it.</p><p class="note">App version 2026.11.16-3</p>'
+    + '<p class="note">Your log is stored on this phone only, inside the Home Screen app, and works with no signal. It does not sync to other devices. Every so often, use Save backup file above and keep the file in Files or iCloud Drive. If you delete the Home Screen icon, the log goes with it.</p><p class="note">App version 2026.11.16-4</p>'
     + '</details>';
   document.getElementById('view').innerHTML = html;
   const out = document.getElementById('bkout');
   if (out) out.value = JSON.stringify(state);
 }
 
+/* ---------- Day manager ---------- */
+function exCount(id){ return everyItem().filter(function(it){ return dayFor(it.k) === id && !isHidden(it.k) && !isPurged(it.k); }).length; }
+function wdSelect(cls, id, wd){
+  return '<select class="'+cls+'" data-id="'+esc(id)+'" aria-label="weekday"><option value="">No day</option>'
+    + WDN.map(function(n, i){ return '<option value="'+i+'"'+(wd === i ? ' selected' : '')+'>'+n+'</option>'; }).join('')
+    + '</select>';
+}
+function daysHTML(){
+  const live = state.days.filter(function(d){ return !d.gone; });
+  let html = '<div class="dhead">Workout days</div>'
+    + '<p class="rirnote">Rename a day, set which weekday it opens on, reorder, or add and delete days. Tap the dot to change its colour. '
+    + 'Deleting a day keeps its logged history and can be undone below. To keep an exercise, move it to another day first (Edit list › Day chips).</p>'
+    + '<div class="daylist">';
+  live.forEach(function(d, i){
+    const n = exCount(d.id);
+    html += '<div class="drow" style="--hue:'+dayHue(d.id)+'">'
+      + '<button type="button" class="sw" data-act="dcol" data-id="'+esc(d.id)+'" aria-label="change colour"></button>'
+      + '<input class="dname" data-id="'+esc(d.id)+'" type="text" value="'+esc(d.label)+'" maxlength="16" autocomplete="off">'
+      + wdSelect('dwd', d.id, d.wd)
+      + '<span class="acts">'
+      + '<button type="button" data-act="dup" data-id="'+esc(d.id)+'" aria-label="move up"'+(i===0?' disabled':'')+'>↑</button>'
+      + '<button type="button" data-act="ddown" data-id="'+esc(d.id)+'" aria-label="move down"'+(i===live.length-1?' disabled':'')+'>↓</button>'
+      + (live.length > 1 ? '<button type="button" class="del" data-act="ddel" data-id="'+esc(d.id)+'" aria-label="delete day">✕</button>' : '')
+      + '</span>'
+      + '<span class="meta">'+n+' exercise'+(n===1?'':'s')+'</span></div>';
+  });
+  html += '</div><div class="newday">'
+    + '<input id="nd_n" type="text" placeholder="New day name" maxlength="16" autocomplete="off">'
+    + wdSelect('', '', null).replace('<select class=""', '<select id="nd_wd"')
+    + '<button type="button" data-act="dadd">Add</button></div>';
+  const gone = state.days.filter(function(d){ return d.gone; });
+  if (gone.length){
+    html += '<div class="gonelist"><div class="rmhead">Deleted days</div>' + gone.map(function(d){
+      return '<div class="grow"><span>'+esc(d.label)+'</span><button type="button" data-act="drestore" data-id="'+esc(d.id)+'">Restore</button></div>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('view').innerHTML = html;
+}
+function dayMetaChanged(){ markMeta(); syncDays(); renderTabs(); render(); doSave(true); }
+
 /* ---------- Shell ---------- */
 function render(){
+  if (DAYS.indexOf(tab) < 0 && tab !== 'hist' && tab !== 'weeks' && tab !== 'days') tab = DAYS[0] || 'days';
   document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
   if (tab === 'hist') historyHTML();
   else if (tab === 'weeks') weeksHTML();
+  else if (tab === 'days') daysHTML();
   else renderDay(tab);
   refreshPill();
 }
@@ -968,7 +1058,7 @@ function refreshPill(){
     pill.textContent = 'Unsaved'; pill.className = 'mono dirty';
     bar.classList.add('show');
     document.getElementById('savebtn').textContent =
-      'Save' + (DAYS.indexOf(tab) >= 0 ? ' · ' + PROGRAM[tab].label : ' changes');
+      'Save' + (DAYS.indexOf(tab) >= 0 ? ' · ' + dayLabel(tab) : ' changes');
   } else {
     bar.classList.remove('show');
     if (cloud === undefined){ pill.textContent = '…'; pill.className = 'mono'; }
@@ -1118,6 +1208,45 @@ document.getElementById('view').addEventListener('click', function(ev){
   if (act === 'wprev'){ weekOffset--; weeksHTML(); return; }
   if (act === 'wnext'){ if (weekOffset < 0) weekOffset++; weeksHTML(); return; }
 
+  /* day manager */
+  if (act === 'dadd'){
+    const nm = document.getElementById('nd_n').value.trim();
+    if (!nm){ toast('Give the day a name'); document.getElementById('nd_n').focus(); return; }
+    const wv = document.getElementById('nd_wd').value;
+    const used = state.days.map(function(d){ return d.c; });
+    let c = 0; while (used.indexOf(c) >= 0 && c < HUES.length) c++;
+    const id = 'd' + Date.now().toString(36);
+    state.days.push({ id:id, label:nm, wd: wv === '' ? null : parseInt(wv, 10), c: c % HUES.length });
+    state.order[id] = [];
+    dayMetaChanged(); toast('Added ' + nm + ' — open it to add exercises'); return;
+  }
+  if (act === 'dup' || act === 'ddown'){
+    const live = state.days.filter(function(d){ return !d.gone; });
+    const i = live.findIndex(function(d){ return d.id === btn.dataset.id; });
+    const j = act === 'dup' ? i-1 : i+1;
+    if (i < 0 || j < 0 || j >= live.length) return;
+    const a = state.days.indexOf(live[i]), b = state.days.indexOf(live[j]);
+    const t = state.days[a]; state.days[a] = state.days[b]; state.days[b] = t;
+    dayMetaChanged(); return;
+  }
+  if (act === 'dcol'){
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    d.c = (d.c + 1) % HUES.length; dayMetaChanged(); return;
+  }
+  if (act === 'ddel'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.classList.add('arm'); btn.textContent = 'Delete?';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = '✕'; }, 2500);
+      return;
+    }
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    d.gone = true; dayMetaChanged(); toast(d.label + ' deleted — restore it below if needed'); return;
+  }
+  if (act === 'drestore'){
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    delete d.gone; dayMetaChanged(); toast(d.label + ' restored'); return;
+  }
+
   /* history */
   if (act === 'hday'){ histDay = btn.dataset.hd; historyHTML(); return; }
   if (act === 'bkcopy'){
@@ -1152,6 +1281,7 @@ document.getElementById('view').addEventListener('click', function(ev){
       const parsed = JSON.parse(document.getElementById('bkin').value);
       if (!parsed || typeof parsed.sessions !== 'object') throw 0;
       state = normalize(parsed); state.savedAt = 0; dirty = true;
+      syncDays(); renderTabs();
       persistLocal(); render();
       toast('Imported — hit Save to store it');
     } catch(e){ toast('That doesn’t look like a valid backup'); }
@@ -1228,7 +1358,7 @@ document.getElementById('view').addEventListener('click', function(ev){
     const base = (state.order[to] && state.order[to].length) ? state.order[to].slice() : dayItems(to).map(function(x){ return x.k; });
     state.order[to] = base.filter(function(x){ return x !== item.k; }).concat([item.k]);
     markMeta(); renderDay(day); refreshPill();
-    toast('“'+item.n+'” moved to '+PROGRAM[to].label);
+    toast('“'+item.n+'” moved to '+dayLabel(to));
     return;
   }
   if (act === 'rmex'){
@@ -1321,6 +1451,17 @@ document.getElementById('view').addEventListener('click', function(ev){
 });
 
 document.getElementById('view').addEventListener('change', function(ev){
+  if (ev.target.classList.contains('dname') || ev.target.classList.contains('dwd')){
+    const d = dayObj(ev.target.dataset.id); if (!d) return;
+    if (ev.target.classList.contains('dname')){
+      const v = ev.target.value.trim();
+      if (!v){ ev.target.value = d.label; return; }
+      d.label = v;
+    } else d.wd = ev.target.value === '' ? null : parseInt(ev.target.value, 10);
+    markMeta(); syncDays(); renderTabs(); doSave(true);
+    document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+    return;
+  }
   if (ev.target.id !== 'bkfilein' || !ev.target.files || !ev.target.files[0]) return;
   const r = new FileReader();
   r.onload = function(){
@@ -1345,8 +1486,9 @@ document.addEventListener('visibilitychange', function(){
   const localWrap = readLocal();
   state = mergeStates(seed || blankState(), localWrap && localWrap.state);
   dirty = computeDirty();
+  syncDays(); renderTabs();
   tab = initialTab();
-  if (DAYS.indexOf(tab) < 0 && tab !== 'hist' && tab !== 'weeks') tab = 'push';
+  if (DAYS.indexOf(tab) < 0 && tab !== 'hist' && tab !== 'weeks' && tab !== 'days') tab = DAYS[0] || 'days';
   rememberTab();
   render();
   artP.then(function(a){
