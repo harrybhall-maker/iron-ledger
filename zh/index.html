@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<!--HEAD-->
+<meta charset="utf-8">
+<title>训练记录</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#EDEEE7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="训练记录">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+  :root {
+    --bg: #EDEEE7;
+    --surface: #FFFFFF;
+    --surface-alt: #E3E5DC;
+    --ink: #191A16;
+    --ink-soft: #54564A;
+    --ink-faint: #83857A;
+    --line: #D6D8CD;
+    --accent: #B8441F;
+    --accent-ink: #FFFFFF;
+    --push: #B8441F;
+    --pull: #2F5D62;
+    --legs: #7A6323;
+    --smalls: #5A4A72;
+    --good: #3F6E3A;
+    --bad: #9A4230;
+    --shadow: 0 1px 2px rgba(25,26,22,0.06), 0 6px 20px -8px rgba(25,26,22,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#161713; --surface:#1E201A; --surface-alt:#262820;
+      --ink:#ECEDE6; --ink-soft:#ABAD9F; --ink-faint:#7B7D70; --line:#34362C;
+      --accent:#E2703E; --accent-ink:#16170F;
+      --push:#E2703E; --pull:#5CB4B9; --legs:#C7A94E; --smalls:#A992CE;
+      --good:#7CB876; --bad:#E08A72;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#161713; --surface:#1E201A; --surface-alt:#262820;
+    --ink:#ECEDE6; --ink-soft:#ABAD9F; --ink-faint:#7B7D70; --line:#34362C;
+    --accent:#E2703E; --accent-ink:#16170F;
+    --push:#E2703E; --pull:#5CB4B9; --legs:#C7A94E; --smalls:#A992CE;
+    --good:#7CB876; --bad:#E08A72;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased;
+    padding-bottom: 92px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration:.001ms!important; transition-duration:.001ms!important; } }
+
+  button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  header.top {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 14px; background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .brand { font-family: "Big Shoulders Display", "Arial Narrow", sans-serif; text-transform: uppercase; font-weight: 800; font-size: 19px; letter-spacing: .03em; }
+  #pill {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-faint); background: var(--surface);
+  }
+  #pill.dirty { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  #pill.saved { color: var(--good); border-color: var(--good); }
+  #pill.warn { color: var(--bad); border-color: var(--bad); }
+
+  nav.tabs { position: sticky; top: 47px; z-index: 29; background: var(--bg); border-bottom: 1px solid var(--line); padding: 7px 14px 9px; }
+  .tabrow { display: flex; gap: 5px; }
+  .tabrow + .tabrow { margin-top: 5px; }
+  nav.tabs button {
+    flex: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface);
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  nav.tabs button.dt.on { background: var(--hue); border-color: var(--hue); color: var(--accent-ink); }
+  nav.tabs button[data-tab="weeks"].on, nav.tabs button[data-tab="hist"].on, nav.tabs button[data-tab="days"].on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .tabrow .wd { display: block; font-size: 9px; opacity: .65; letter-spacing: .08em; }
+
+  main { max-width: 560px; margin: 0 auto; padding: 14px 14px 30px; }
+
+  #banner { display: none; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--bad); border-left: 3px solid var(--bad); background: var(--surface);
+    font-size: 13.5px; color: var(--ink-soft); }
+  #banner.show { display: block; }
+  #banner b { color: var(--ink); }
+
+  .dayline { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 4px 10px; }
+  .dayline .d { font-family: "Big Shoulders Display", sans-serif; text-transform: uppercase; font-weight: 800; font-size: 26px; line-height: 1; }
+  .dayline .rt { text-align: right; }
+  .dayline .wk { display: block; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); }
+  .editbtn { margin-top: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; }
+  .editbtn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .rirnote { font-size: 13px; color: var(--ink-faint); padding: 0 4px 12px; }
+  .rirnote.edit { color: var(--ink-soft); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line);
+    border-radius: 12px; padding: 12px 12px 10px; margin: 0 0 12px; box-shadow: var(--shadow); }
+  .card[data-hue] { border-left-color: var(--hue, var(--line)); }
+  .daylist .drow { display: grid; grid-template-columns: 14px 1fr 92px auto; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--hue); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+  .drow .sw { width: 14px; height: 14px; border-radius: 50%; background: var(--hue); border: none; padding: 0; }
+  .drow input, .drow select, .newday input, .newday select { min-height: 40px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-alt);
+    font: inherit; font-size: 15px; color: var(--ink); padding: 0 10px; min-width: 0; width: 100%; }
+  .drow .acts { display: flex; gap: 4px; }
+  .drow .acts button, .newday button, .gonelist button { min-height: 40px; min-width: 36px; padding: 0 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); font-size: 14px; }
+  .drow .acts button.del { color: var(--bad); }
+  .drow .acts button.del.arm { background: var(--bad); color: var(--accent-ink); border-color: var(--bad); }
+  .drow .meta { grid-column: 2 / -1; font-size: 12px; color: var(--ink-faint); }
+  .newday { display: grid; grid-template-columns: 1fr 92px auto; gap: 8px; margin: 14px 0 6px; }
+  .newday button { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 0 14px; }
+  .gonelist { margin-top: 18px; }
+  .gonelist .grow { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--ink-soft); }
+  .dhead { font-family: "Big Shoulders Display", sans-serif; text-transform: uppercase; font-weight: 800; font-size: 26px; line-height: 1; padding: 2px 4px 10px; }
+  .card.skipped { opacity: .55; border-left-style: dashed; }
+
+  .editbar { display: flex; align-items: center; gap: 6px; padding-bottom: 9px; margin-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .iconbtn { width: 38px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); font-size: 15px; }
+  .iconbtn:disabled { opacity: .35; }
+  .editbar .spacer { flex: 1; }
+  .rmex { min-height: 36px; padding: 0 13px; border-radius: 8px; border: 1px solid var(--bad); background: var(--surface); color: var(--bad); font-size: 13px; }
+  .rmex.arm { background: var(--bad); color: var(--accent-ink); font-weight: 600; }
+  .moverow { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding-bottom: 9px; margin-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .moverow .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-right: 2px; }
+  .movechip { min-height: 32px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); font-size: 12.5px; }
+  .movechip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+
+  .chead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cname { font-weight: 700; font-size: 16.5px; }
+  .target { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); white-space: nowrap; text-align: right; }
+  .target b { color: var(--accent); font-weight: 600; }
+  .target .mg { display: block; font-size: 10px; opacity: .85; }
+
+  .vrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .vchip { font-size: 13px; padding: 6px 11px; min-height: 34px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); }
+  .vchip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+
+  .hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+  .hint b { color: var(--ink-soft); font-weight: 600; }
+
+  .sethead { display: grid; grid-template-columns: 22px 1fr 1fr 30px; gap: 6px; margin-top: 10px; padding: 0 2px;
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .sethead span:nth-child(2), .sethead span:nth-child(3) { text-align: center; }
+  .set { display: grid; grid-template-columns: 22px 1fr 1fr 30px; gap: 6px; align-items: center; margin-top: 6px; }
+  .sn { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); text-align: center; }
+  .grp { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface-alt); }
+  .grp button { width: 34px; min-height: 42px; font-size: 18px; color: var(--ink-soft); background: var(--surface-alt); flex: none; }
+  .grp button:active { background: var(--line); }
+  .grp input { width: 100%; min-width: 0; border: none; text-align: center; background: var(--surface);
+    font-family: "IBM Plex Mono", monospace; font-size: 16px; color: var(--ink); padding: 0 2px; }
+  .rmset { color: var(--ink-faint); font-size: 16px; min-height: 42px; }
+  .sn { border: none; background: none; padding: 0; min-height: 42px; width: 22px; cursor: pointer; }
+  .set.k-m, .set.k-d { margin-left: 10px; grid-template-columns: 22px 1fr 1fr 30px; }
+  .set.k-m .sn { color: var(--pull); font-weight: 600; }
+  .set.k-d .sn { color: var(--accent); font-weight: 600; }
+  .set.k-m .grp { border-color: color-mix(in srgb, var(--pull) 45%, var(--line)); }
+  .set.k-d .grp { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .myochip { margin-left: auto; }
+  .lownote { color: var(--bad); font-weight: 600; }
+  .upnote { color: var(--pull); font-weight: 600; }
+  .modebar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .modebar .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .modebar .key { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); }
+  .modebar .key b { color: var(--pull); } .modebar .key i { color: var(--accent); font-style: normal; font-weight: 600; }
+
+  .cfoot { display: flex; gap: 8px; margin-top: 10px; }
+  .addset.kind { flex: .8; }
+  .addset, .skipbtn { flex: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-soft); background: var(--surface-alt); }
+  .skipbtn.on { background: var(--bad); border-color: var(--bad); color: var(--accent-ink); }
+
+  .addex { width: 100%; min-height: 46px; border-radius: 12px; border: 1px dashed var(--line); background: var(--surface); color: var(--ink-soft); font-size: 14.5px; margin-bottom: 12px; }
+  .addform { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .addform h4 { margin: 0 0 10px; font-family: "Big Shoulders Display", sans-serif; text-transform: uppercase; font-size: 20px; letter-spacing: .02em; }
+  .fld { margin-top: 9px; }
+  .fld label { display: block; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
+  .fld input[type=text], .fld select { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-alt); color: var(--ink); font-size: 16px; padding: 0 11px; }
+  .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .chkrow { display: flex; align-items: center; gap: 9px; margin-top: 12px; font-size: 13.5px; color: var(--ink-soft); }
+  .chkrow input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .formfoot { display: flex; gap: 8px; margin-top: 14px; }
+  .formfoot button { flex: 1; min-height: 44px; border-radius: 9px; font-size: 14.5px; border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink-soft); }
+  .formfoot button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+  .removed { border: 1px dashed var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; background: var(--surface); }
+  .rmhead { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
+  .rmrow { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .rmrow:first-of-type { border-top: none; }
+  .rmrow span { flex: 1; color: var(--ink-soft); }
+  .rmrow button { min-height: 34px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-alt); font-size: 12.5px; color: var(--ink-soft); }
+  .rmrow button.del { border-color: var(--bad); color: var(--bad); }
+  .rmrow button.del.arm { background: var(--bad); color: var(--accent-ink); font-weight: 600; }
+
+  /* Weeks */
+  .weeknav { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .weeknav button { width: 46px; min-height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 17px; color: var(--ink-soft); }
+  .weeknav button:disabled { opacity: .3; }
+  .weeknav .wlabel { flex: 1; text-align: center; }
+  .weeknav .wlabel b { display: block; font-family: "Big Shoulders Display", sans-serif; text-transform: uppercase; font-size: 21px; }
+  .weeknav .wlabel span { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+
+  .volblock { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 6px; margin-bottom: 12px; }
+  .volhead { display: flex; justify-content: space-between; align-items: baseline; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  .vrowm { margin-bottom: 9px; }
+  .vtop { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; }
+  .vtop .mn { color: var(--ink); }
+  .vtop .vn { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--ink-soft); }
+  .vtop .vn i { font-style: normal; color: var(--ink-faint); }
+  .bar { position: relative; height: 7px; border-radius: 4px; background: var(--surface-alt); margin-top: 4px; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); }
+  .bar i.full { background: var(--good); }
+  .vnone { color: var(--ink-faint); font-size: 13px; }
+
+  .hblock { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+  .hblock h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
+  .hblock h3 em { font-style: normal; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); margin-left: 6px; }
+  .hrow { display: flex; align-items: baseline; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+  .hrow:first-of-type { border-top: none; }
+  .hdate { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .hsets { flex: 1; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+  .hvar { color: var(--ink-faint); font-size: 11.5px; }
+  .delta { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; white-space: nowrap; }
+  .delta.up { color: var(--good); } .delta.dn { color: var(--bad); } .delta.eq { color: var(--ink-faint); }
+  .hnone { color: var(--ink-faint); font-size: 13px; }
+  .hskip { flex: 1; color: var(--bad); font-size: 12.5px; font-family: "IBM Plex Mono", monospace; }
+  .hdel { color: var(--ink-faint); font-size: 12px; }
+  .hdel.arm { color: var(--bad); font-weight: 600; }
+  .hchips { display: flex; gap: 5px; margin: 2px 0 14px; flex-wrap: wrap; }
+  .hchips button { flex: 1; min-width: 70px; min-height: 38px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
+  .hchips button.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+  details.panel { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 10px 12px; }
+  details.panel summary { font-size: 13.5px; color: var(--ink-soft); cursor: pointer; }
+  details.panel textarea { width: 100%; height: 90px; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-alt); color: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 8px; }
+  .bkrow { display: flex; gap: 8px; margin-top: 8px; }
+  .bkrow button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-alt); font-size: 13px; color: var(--ink-soft); }
+  .diag { margin-top: 10px; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-soft); }
+  .diag div { padding: 3px 0; border-top: 1px solid var(--line); }
+  .diag div:first-child { border-top: none; }
+  .diag .ok { color: var(--good); } .diag .no { color: var(--bad); }
+
+  #savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+    background: var(--bg); border-top: 1px solid var(--line); display: none; }
+  #savebar.show { display: block; }
+  #savebtn { width: 100%; max-width: 532px; margin: 0 auto; display: block; min-height: 50px;
+    background: var(--accent); color: var(--accent-ink); border-radius: 12px; font-weight: 700; font-size: 16px; letter-spacing: .02em; }
+  #savebtn:disabled { opacity: .6; }
+
+  #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 84px; z-index: 50;
+    background: var(--ink); color: var(--bg); font-size: 13.5px; padding: 9px 16px; border-radius: 999px;
+    opacity: 0; pointer-events: none; transition: opacity .2s ease; max-width: 88vw; text-align: center; }
+  #toast.show { opacity: 1; }
+
+  .bkfile { display:inline-flex; align-items:center; cursor:pointer; }
+  .note { font-size: 12.5px; color: var(--ink-faint); padding: 4px; }
+</style>
+<!--/HEAD-->
+</head>
+<body>
+<!--BODY-->
+<script id="seed" type="application/json"></script>
+<script id="tmpl" type="text/plain"></script>
+
+<header class="top">
+  <span class="brand">训练记录</span>
+  <span id="pill" class="mono">…</span>
+</header>
+
+<nav class="tabs" id="tabs">
+  <div id="daytabs"></div>
+  <div class="tabrow">
+    <button data-tab="weeks">每周</button>
+    <button data-tab="hist">历史</button>
+    <button data-tab="days">训练日</button>
+  </div>
+</nav>
+
+<main>
+  <div id="banner"></div>
+  <div id="view" aria-live="polite"></div>
+</main>
+
+<div id="savebar"><button id="savebtn">保存</button></div>
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+/* ---------- Muscle groups ---------- */
+const MUSCLES = ['胸','肩中束','肩后束','肱三头肌','肱二头肌','背阔肌','上背',
+                 '斜方肌','前臂','股四头肌','臀','腘绳肌','小腿','腹部','下背'];
+
+/* ---------- Built-in program (Version 2) ---------- */
+const PROGRAM = {
+  intro: { label:'入门课', items:[] },
+  a: { label:'训练A', items:[
+    { k:'goblet', n:'高脚杯深蹲', m:'股四头肌', t:'10–15', vars:[
+      { id:'db', n:'哑铃高脚杯深蹲', w:8, u:'kg' }, { id:'heels', n:'垫脚跟哑铃深蹲', w:6, u:'kg/只' },
+      { id:'smith', n:'史密斯深蹲', w:10, u:'kg' }, { id:'hack', n:'哈克深蹲', w:10, u:'kg' },
+      { id:'legpress', n:'腿举', w:30, u:'kg' }, { id:'bb', n:'杠铃深蹲', w:20, u:'kg' } ] },
+    { k:'hipthrust', n:'臀推', m:'臀', t:'10–15', vars:[
+      { id:'bb', n:'杠铃臀推', w:20, u:'kg' }, { id:'mach', n:'臀推机', w:20, u:'kg' },
+      { id:'smith', n:'史密斯臀推', w:20, u:'kg' }, { id:'bridge', n:'哑铃臀桥', w:10, u:'kg' },
+      { id:'single', n:'单腿哑铃臀推', w:0, u:'kg', bw:true } ] },
+    { k:'pulldown', n:'高位下拉', m:'背阔肌', t:'10–15', vars:[
+      { id:'wide', n:'宽握下拉', w:20, u:'kg' }, { id:'neutral', n:'对握下拉', w:20, u:'kg' },
+      { id:'single', n:'单臂绳索下拉', w:7.5, u:'kg/侧' } ] },
+    { k:'latraise', n:'侧平举', m:'肩中束', t:'10–15', vars:[
+      { id:'db', n:'哑铃侧平举', w:2, u:'kg/只' }, { id:'cable', n:'绳索侧平举', w:2.5, u:'kg/侧' },
+      { id:'mach', n:'侧平举机', w:10, u:'kg' }, { id:'seated', n:'坐姿哑铃侧平举', w:2, u:'kg/只' } ] },
+    { k:'reardelt', n:'反向飞鸟 / 面拉', m:'肩后束', t:'10–15', vars:[
+      { id:'pec', n:'反向蝴蝶机', w:10, u:'kg' }, { id:'face', n:'绳索面拉', w:10, u:'kg' },
+      { id:'db', n:'俯身哑铃反向飞鸟', w:2, u:'kg/只' }, { id:'cable', n:'绳索反向飞鸟', w:2.5, u:'kg/侧' },
+      { id:'band', n:'弹力带拉开', w:0, u:'kg', bw:true } ] },
+  ]},
+  b: { label:'训练B', items:[
+    { k:'rdl', n:'罗马尼亚硬拉', m:'腘绳肌', t:'10–15', vars:[
+      { id:'db', n:'哑铃罗马尼亚硬拉', w:8, u:'kg/只' }, { id:'bb', n:'杠铃罗马尼亚硬拉', w:20, u:'kg' },
+      { id:'single', n:'单腿哑铃罗马尼亚硬拉', w:6, u:'kg' }, { id:'ext', n:'45°背伸', w:0, u:'kg', bw:true },
+      { id:'pull', n:'绳索后拉', w:10, u:'kg' } ] },
+    { k:'bss', n:'保加利亚分腿蹲（身体前倾）', m:'臀', t:'10–15', vars:[
+      { id:'db', n:'哑铃分腿蹲', w:4, u:'kg/只' }, { id:'rlunge', n:'后撤弓步', w:4, u:'kg/只' },
+      { id:'wlunge', n:'行走弓步', w:4, u:'kg/只' }, { id:'step', n:'高台阶上步', w:4, u:'kg/只' },
+      { id:'smith', n:'史密斯分腿蹲', w:10, u:'kg' } ] },
+    { k:'row', n:'坐姿绳索划船', m:'上背', t:'10–15', vars:[
+      { id:'cable', n:'坐姿绳索划船', w:20, u:'kg' }, { id:'chest', n:'胸部支撑哑铃划船', w:6, u:'kg/只' },
+      { id:'single', n:'单臂哑铃划船', w:8, u:'kg' }, { id:'mach', n:'器械划船', w:20, u:'kg' },
+      { id:'inv', n:'反向划船', w:0, u:'kg', bw:true } ] },
+    { k:'incline', n:'上斜哑铃卧推', m:'胸', t:'10–15', vars:[
+      { id:'db', n:'上斜哑铃卧推', w:5, u:'kg/只' }, { id:'flat', n:'平板哑铃卧推', w:5, u:'kg/只' },
+      { id:'mach', n:'上斜器械推胸', w:10, u:'kg' }, { id:'smith', n:'史密斯上斜卧推', w:10, u:'kg' },
+      { id:'cable', n:'绳索推胸', w:5, u:'kg/侧' }, { id:'pushup', n:'俯卧撑', w:0, u:'kg', bw:true } ] },
+    { k:'abduction', n:'髋外展', m:'臀', t:'10–15', vars:[
+      { id:'mach', n:'髋外展机', w:20, u:'kg' }, { id:'cable', n:'绳索站姿外展', w:2.5, u:'kg' },
+      { id:'walk', n:'弹力带侧向走', w:0, u:'kg', bw:true }, { id:'seated', n:'坐姿弹力带外展', w:0, u:'kg', bw:true } ] },
+  ]},
+};
+
+/* ---------- Her programme timeline ---------- */
+const START = '2026-11-30';       // week 1 starts Monday 30 Nov; the intro session comes before it
+function progWeek(iso){
+  if (iso < START) return 0;
+  return Math.floor((new Date(weekStart(iso)+'T12:00:00') - new Date(START+'T12:00:00')) / 604800000) + 1;
+}
+function phaseOf(iso){
+  const w = progWeek(iso);
+  if (w <= 0) return { w:w, s:1, key:'intro' };
+  if (w === 1) return { w:w, s:2, key:'easy' };
+  if (w <= 3) return { w:w, s:3, key:'hard' };
+  return { w:w, s:3, key:'fail' };
+}
+function wkLabel(iso){ const w = progWeek(iso); return w >= 1 ? '第'+w+'周' : (w === 0 ? '入门' : '更早'); }
+const RULES = '第一组的目标是10–15次。之后几组次数下降没关系，但如果某组只有5次或更少，下一组就要减重。任何一组超过15次，下周加重。';
+function phaseNote(iso){
+  const p = phaseOf(iso);
+  if (p.key === 'intro') return '<b>入门课</b>：每个动作先做2–3组轻重量热身，专心学动作。然后做<b>1组正式组</b>，下放时慢数3–4秒，'
+    + '做到10–15次、还能再做2–3次时停下。目的是学会动作，接下来几天肌肉会酸痛，这是正常的，不要做得太累。';
+  if (p.key === 'easy') return '<b>第1周</b>：每个动作<b>2组</b>正式组，每组结束时还能再做2–3次。' + RULES;
+  if (p.key === 'hard') return '<b>第'+p.w+'周</b>：每个动作<b>3组</b>，要比较吃力，每组结束时只能再做1–2次。' + RULES;
+  return '<b>第'+p.w+'周</b>：每个动作<b>3组</b>，接近力竭：做到再多一次就很难保持动作标准为止。' + RULES;
+}
+/* planned sets follow the calendar, not a fixed number */
+Object.keys(PROGRAM).forEach(function(d){
+  PROGRAM[d].items.forEach(function(it){
+    Object.defineProperty(it, 's', { enumerable:true, get:function(){ return phaseOf(todayKey()).s; } });
+  });
+});
+function incW(w){ return w < 10 ? 1 : 2.5; }
+function lowerW(w){
+  if (w == null || w <= 0) return w;
+  const step = w < 10 ? 1 : 2.5;
+  return Math.max(step, Math.round((w * 0.8) / step) * step);
+}
+const BUILTIN = Object.keys(PROGRAM);
+const HUES = ['#B8441F','#2F5D62','#7A6323','#5A4A72','#3F6E3A','#8A3B5C','#2E4A7A','#6B5B3E'];
+const WDN = ['周日','周一','周二','周三','周四','周五','周六'];
+let DAYS = BUILTIN.slice();      // active days, in tab order
+function defaultDays(){
+  return [ { id:'intro', label:'入门课', wd:null, c:2 },
+           { id:'a', label:'训练A', wd:1, wd2:2, c:5 }, { id:'b', label:'训练B', wd:3, wd2:4, c:1 } ];
+}
+function dayObj(id){
+  const ds = (state && state.days) || [];
+  for (let i=0;i<ds.length;i++) if (ds[i].id === id) return ds[i];
+  return null;
+}
+function wdText(d){
+  if (d.wd == null) return '&nbsp;';
+  return WDN[d.wd] + (d.wd2 != null ? '/' + WDN[d.wd2].slice(1) : '');
+}
+function dayLabel(id){ const d = dayObj(id); return d ? d.label : (id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Day'); }
+function dayHue(id){ const d = dayObj(id); return HUES[(d ? d.c : 0) % HUES.length]; }
+function syncDays(){
+  DAYS = state.days.filter(function(d){ return !d.gone; }).map(function(d){ return d.id; });
+}
+function renderTabs(){
+  const box = document.getElementById('daytabs');
+  if (!box) return;
+  let html = '';
+  for (let i=0;i<DAYS.length;i+=4){
+    html += '<div class="tabrow">' + DAYS.slice(i, i+4).map(function(id){
+      const d = dayObj(id);
+      return '<button class="dt" data-tab="'+esc(id)+'" style="--hue:'+dayHue(id)+'">'+esc(d.label)
+        + '<span class="wd">'+wdText(d)+'</span></button>';
+    }).join('') + '</div>';
+  }
+  box.innerHTML = html;
+  if (html) box.lastElementChild.style.marginBottom = '5px';
+}
+
+/* ---------- State ---------- */
+const LSKEY = 'ironledger.zh.v1';
+const TABKEY = 'ironledger.zh.tab';
+let state = blankState();
+let dirty = false;
+let cloud = undefined;
+let lastErr = '';
+let lsOK = null;
+let tab = 'push';
+let histDay = 'push';
+let weekOffset = 0;          // 0 = current week, -1 = last week …
+let editing = false;
+let adding = false;
+let lastSaveAt = 0;
+
+const artP = Promise.resolve(null);   /* offline build: device storage only */
+let swOK = null;
+
+function blankState(){
+  return { v:3, savedAt:0, metaU:0, sessions:{}, custom:[], hidden:[], purged:[], dayOf:{},
+           order:{intro:[],a:[],b:[]}, days: defaultDays() };
+}
+function normalize(s){
+  if (!s || typeof s !== 'object') return blankState();
+  if (!s.sessions || typeof s.sessions !== 'object') s.sessions = {};
+  // migrate v2 (per-day custom/hidden objects) -> v3 (flat arrays)
+  if (s.custom && !Array.isArray(s.custom)){
+    const flat = [];
+    BUILTIN.forEach(function(d){ (s.custom[d] || []).forEach(function(it){ it.nday = d; flat.push(it); }); });
+    s.custom = flat;
+  }
+  if (s.hidden && !Array.isArray(s.hidden)){
+    const flat = [];
+    BUILTIN.forEach(function(d){ (s.hidden[d] || []).forEach(function(k){ flat.push(k); }); });
+    s.hidden = flat;
+  }
+  if (!Array.isArray(s.custom)) s.custom = [];
+  if (!Array.isArray(s.hidden)) s.hidden = [];
+  if (!Array.isArray(s.purged)) s.purged = [];
+  if (!s.dayOf || typeof s.dayOf !== 'object') s.dayOf = {};
+  if (!s.order || typeof s.order !== 'object') s.order = {};
+  if (!Array.isArray(s.days) || !s.days.length) s.days = defaultDays();
+  s.days = s.days.filter(function(d){ return d && typeof d.id === 'string' && d.id; });
+  s.days.forEach(function(d, i){
+    if (typeof d.label !== 'string' || !d.label.trim()) d.label = 'Day ' + (i+1);
+    if (!(typeof d.wd === 'number' && d.wd >= 0 && d.wd <= 6)) d.wd = null;
+    if (!(typeof d.wd2 === 'number' && d.wd2 >= 0 && d.wd2 <= 6)) d.wd2 = null;
+    if (typeof d.c !== 'number') d.c = i % HUES.length;
+  });
+  const dayIds = s.days.map(function(d){ return d.id; });
+  dayIds.forEach(function(d){ if (!Array.isArray(s.order[d])) s.order[d] = []; });
+  s.custom.forEach(function(it){
+    if (!it.m) it.m = '其他';
+    if (!it.nday || dayIds.indexOf(it.nday) < 0) it.nday = dayIds[dayIds.length-1];
+  });
+  if (typeof s.metaU !== 'number') s.metaU = 0;
+  if (typeof s.savedAt !== 'number') s.savedAt = 0;
+  s.v = 3;
+  return s;
+}
+
+/* ---------- Self-rebuilding document ---------- */
+const B64 = (document.getElementById('tmpl').textContent || '').trim();
+const MARK_T = '__' + 'TMPL_B64__';
+const MARK_S = '__' + 'SEED_JSON__';
+function templateSource(){
+  if (!B64 || B64.indexOf('__TMPL') === 0) return null;
+  try {
+    const bin = atob(B64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch(e){ return null; }
+}
+function buildDoc(){
+  const T = templateSource();
+  if (!T) return null;
+  if (T.indexOf(MARK_T) < 0 || T.indexOf(MARK_S) < 0) return null;
+  const json = JSON.stringify(state).replace(/</g, '\\u003c');
+  const out = T.replace(MARK_T, function(){ return B64; }).replace(MARK_S, function(){ return json; });
+  if (out.indexOf('<!doctype') !== 0 && out.indexOf('<!DOCTYPE') !== 0) return null;
+  return out;
+}
+
+/* ---------- Storage ---------- */
+function testLS(){
+  try {
+    localStorage.setItem(LSKEY+'.probe','1');
+    const v = localStorage.getItem(LSKEY+'.probe');
+    localStorage.removeItem(LSKEY+'.probe');
+    return v === '1';
+  } catch(e){ return false; }
+}
+function readLocal(){ try { const s = localStorage.getItem(LSKEY); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
+function persistLocal(){ try { localStorage.setItem(LSKEY, JSON.stringify({ state:state, dirty:dirty })); } catch(e){ lsOK = false; } }
+function rememberTab(){
+  try { sessionStorage.setItem(TABKEY, tab); } catch(e){}
+  try { localStorage.setItem(TABKEY, tab); } catch(e){}
+}
+function initialTab(){
+  try { const t = sessionStorage.getItem(TABKEY); if (t) return t; } catch(e){}
+  const today = new Date().getDay();
+  if (todayKey() < START && dayObj('intro') && !dayObj('intro').gone) return 'intro';
+  const byDay = state.days.filter(function(d){ return !d.gone && (d.wd === today || d.wd2 === today); })[0];
+  if (byDay) return byDay.id;
+  try { const t = localStorage.getItem(TABKEY); if (t) return t; } catch(e){}
+  return 'push';
+}
+function readSeed(){
+  const el = document.getElementById('seed');
+  const txt = (el && el.textContent || '').trim();
+  if (!txt || txt.indexOf('__SEED') === 0) return null;
+  try { const o = JSON.parse(txt); return (o && o.sessions) ? o : null; } catch(e){ return null; }
+}
+function mergeStates(base0, other0){
+  const base = normalize(base0 || blankState());
+  if (!other0 || !other0.sessions) return base;
+  const O = normalize(other0);
+  for (const key in O.sessions){
+    const cur = base.sessions[key];
+    if (!cur || (O.sessions[key].u || 0) > (cur.u || 0)) base.sessions[key] = O.sessions[key];
+  }
+  if ((O.metaU || 0) > (base.metaU || 0)){
+    base.custom = O.custom; base.hidden = O.hidden; base.purged = O.purged;
+    base.dayOf = O.dayOf; base.order = O.order; base.days = O.days; base.metaU = O.metaU;
+  }
+  if ((O.savedAt || 0) > (base.savedAt || 0)) base.savedAt = O.savedAt;
+  return base;
+}
+function computeDirty(){
+  const sa = state.savedAt || 0;
+  if ((state.metaU || 0) > sa) return true;
+  for (const key in state.sessions){
+    if ((state.sessions[key].u || 0) > sa && sessionHasContent(state.sessions[key])) return true;
+  }
+  return false;
+}
+function sessionHasContent(sess){
+  for (const k in sess.ex){
+    const e = sess.ex[k];
+    if (e.skip) return true;
+    if (e.sets && e.sets.some(function(s){ return s.r != null; })) return true;
+  }
+  return false;
+}
+function markMeta(){ state.metaU = Date.now(); dirty = true; persistLocal(); }
+
+/* ---------- Item lookup ---------- */
+function everyItem(){
+  const out = [];
+  BUILTIN.forEach(function(d){ PROGRAM[d].items.forEach(function(it){ out.push(it); }); });
+  state.custom.forEach(function(it){ out.push(it); });
+  return out;
+}
+function nativeDay(k){
+  for (let i=0;i<BUILTIN.length;i++){
+    const items = PROGRAM[BUILTIN[i]].items;
+    for (let j=0;j<items.length;j++) if (items[j].k === k) return BUILTIN[i];
+  }
+  for (let i=0;i<state.custom.length;i++) if (state.custom[i].k === k) return state.custom[i].nday;
+  return 'smalls';
+}
+function dayFor(k){ const d = state.dayOf[k]; return (d && dayObj(d)) ? d : nativeDay(k); }
+function itemByKey(k){
+  const all = everyItem();
+  for (let i=0;i<all.length;i++) if (all[i].k === k) return all[i];
+  return null;
+}
+function isHidden(k){ return state.hidden.indexOf(k) >= 0; }
+function isPurged(k){ return state.purged.indexOf(k) >= 0; }
+function orderItems(day, list){
+  const ord = state.order[day] || [];
+  if (!ord.length) return list;
+  return list.slice().sort(function(a,b){
+    let ia = ord.indexOf(a.k), ib = ord.indexOf(b.k);
+    if (ia < 0) ia = 1000 + list.indexOf(a);
+    if (ib < 0) ib = 1000 + list.indexOf(b);
+    return ia - ib;
+  });
+}
+function dayItems(day){
+  if (day === 'intro'){
+    let all = [];
+    DAYS.forEach(function(d){ if (d !== 'intro') all = all.concat(dayItems(d)); });
+    return all;
+  }
+  return orderItems(day, everyItem().filter(function(it){
+    return dayFor(it.k) === day && !isHidden(it.k) && !isPurged(it.k);
+  }));
+}
+function hiddenItems(day){
+  return everyItem().filter(function(it){ return dayFor(it.k) === day && isHidden(it.k) && !isPurged(it.k); });
+}
+
+/* ---------- Dates & weeks ---------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function isoOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function todayKey(){ return isoOf(new Date()); }
+function fmtDate(iso){
+  return new Date(iso+'T12:00:00').toLocaleDateString('zh-CN', { month:'long', day:'numeric', weekday:'short' });
+}
+function fmtShort(iso){
+  return new Date(iso+'T12:00:00').toLocaleDateString('zh-CN', { month:'long', day:'numeric' });
+}
+function weekStart(iso){                         // Monday-based
+  const d = new Date(iso+'T12:00:00');
+  d.setDate(d.getDate() - ((d.getDay()+6) % 7));
+  return isoOf(d);
+}
+function shiftWeek(iso, n){
+  const d = new Date(iso+'T12:00:00');
+  d.setDate(d.getDate() + n*7);
+  return isoOf(d);
+}
+function shiftDays(iso, n){
+  const d = new Date(iso+'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return isoOf(d);
+}
+function anchorWeek(){
+  let min = null;
+  for (const key in state.sessions){
+    if (!sessionHasContent(state.sessions[key])) continue;
+    const w = weekStart(state.sessions[key].date);
+    if (!min || w < min) min = w;
+  }
+  return min;
+}
+function weekNo(iso){ return progWeek(iso); }
+
+/* ---------- Sessions ---------- */
+function skey(day, date){ return day + '|' + date; }
+function curSession(day){
+  const key = skey(day, todayKey());
+  if (!state.sessions[key]) state.sessions[key] = { day:day, date:todayKey(), u:0, ex:{} };
+  return state.sessions[key];
+}
+function allSessionsSorted(){
+  const out = [];
+  for (const key in state.sessions){
+    const s = state.sessions[key];
+    if (sessionHasContent(s)) out.push(s);
+  }
+  out.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+  return out;
+}
+function prevEntry(exKey, beforeDate, variantId){    // searches every day, so moves keep history
+  const list = allSessionsSorted();
+  for (let i=0;i<list.length;i++){
+    const s = list[i];
+    if (s.date >= beforeDate) continue;
+    const e = s.ex[exKey];
+    if (!e || e.skip) continue;
+    if (variantId && e.v !== variantId) continue;
+    const logged = (e.sets||[]).filter(function(x){ return x.r != null; });
+    if (logged.length) return { date:s.date, v:e.v, sets:logged };
+  }
+  return null;
+}
+function topW(sets){
+  let m = null;
+  sets.forEach(function(s){ if (s.k !== 'd' && s.r != null && s.w != null && (m===null || s.w > m)) m = s.w; });
+  return m;
+}
+
+/* ---------- Volume ---------- */
+function plannedByMuscle(){
+  const out = {};
+  DAYS.forEach(function(d){
+    if (d === 'intro') return;
+    dayItems(d).forEach(function(it){ out[it.m] = (out[it.m] || 0) + (it.s || 0); });
+  });
+  return out;
+}
+function loggedByMuscle(wkStart){
+  const wkEnd = shiftWeek(wkStart, 1);
+  const out = {};
+  for (const key in state.sessions){
+    const s = state.sessions[key];
+    if (s.date < wkStart || s.date >= wkEnd) continue;
+    for (const k in s.ex){
+      const e = s.ex[k];
+      if (e.skip) continue;
+      const n = (e.sets||[]).reduce(function(a, x){ return x.r == null ? a : a + setWeight(x); }, 0);
+      if (!n) continue;
+      const it = itemByKey(k);
+      const m = it ? it.m : '其他';
+      out[m] = (out[m] || 0) + n;
+    }
+  }
+  return out;
+}
+
+/* Myo mini-sets count as about 2/3 of a set and drop sets about 1/2 */
+function setWeight(s){ return s.k === 'm' ? 2/3 : s.k === 'd' ? 0.5 : 1; }
+function fmtN(n){ return String(Math.round(n * 10) / 10); }
+
+/* ---------- Format ---------- */
+function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtW(w, variant){
+  if (w == null) return '?';
+  if (variant && variant.bw) return w === 0 ? '自重' : '自重+' + w;
+  return String(w);
+}
+function fmtSets(sets, variant){
+  const done = sets.filter(function(s){ return s.r != null; });
+  let out = '';
+  done.forEach(function(s, i){
+    const prev = done[i-1];
+    if (s.k === 'm'){
+      out += (i ? ' + ' : '') + 'm' + (prev && prev.w === s.w ? '' : fmtW(s.w, variant) + '×') + s.r;
+    } else if (s.k === 'd'){
+      out += (i ? ' ↘ ' : '↘ ') + fmtW(s.w, variant) + '×' + s.r;
+    } else {
+      out += (i ? ' · ' : '') + fmtW(s.w, variant) + '×' + s.r;
+    }
+  });
+  return out;
+}
+
+/* ---------- Cards ---------- */
+function findVar(item, id){
+  for (let i=0;i<item.vars.length;i++) if (item.vars[i].id===id) return item.vars[i];
+  return item.vars[0];
+}
+function chosenVariantId(day, item){
+  const st = curSession(day).ex[item.k];
+  if (st && st.v) return st.v;
+  const prev = prevEntry(item.k, '9999', null);
+  if (prev){ for (let i=0;i<item.vars.length;i++) if (item.vars[i].id === prev.v) return prev.v; }
+  return item.vars[0].id;
+}
+function progressFrom(prev){
+  const straight = prev.sets.filter(function(s){ return !s.k && s.r != null; });
+  if (!straight.length) return null;
+  const w0 = straight[0].w;
+  const up = straight.some(function(s){ return s.r > 15; });
+  return { w0:w0, up:up, w: (up && w0 != null) ? Math.round((w0 + incW(w0)) * 100) / 100 : w0 };
+}
+function prefillRows(item, variant){
+  const prev = prevEntry(item.k, todayKey(), variant.id);
+  const pr = prev ? progressFrom(prev) : null;
+  const w = pr ? pr.w : variant.w;
+  const rows = [];
+  for (let i=0;i<item.s;i++) rows.push({ w: w, r:null });
+  return rows;
+}
+function isMyo(st){ return (st.sets||[]).some(function(s){ return s.k === 'm'; }); }
+function dropW(w){
+  if (w == null || w <= 0) return w;
+  const step = w >= 10 ? 2.5 : 1.25;
+  return Math.max(step, Math.round((w * 0.75) / step) * step);
+}
+function ensureEx(day, item){
+  const sess = curSession(day);
+  if (!sess.ex[item.k]){
+    const vid = chosenVariantId(day, item);
+    sess.ex[item.k] = { v:vid, skip:false, sets: prefillRows(item, findVar(item, vid)) };
+  }
+  return sess.ex[item.k];
+}
+function setLabel(sets, i){
+  const s = sets[i];
+  if (s.k === 'm') return 'm';
+  if (s.k === 'd') return '↘';
+  let n = 0;
+  for (let j=0;j<=i;j++) if (!sets[j].k) n++;
+  return String(n);
+}
+function setRowHTML(row, i, total, sets){
+  const wv = row.w == null ? '' : row.w;
+  const rv = row.r == null ? '' : row.r;
+  const kind = row.k || '';
+  const nm = kind === 'm' ? '休息暂停小组' : kind === 'd' ? '递减组' : '普通组';
+  return '<div class="set'+(kind ? ' k-'+kind : '')+'" data-i="'+i+'" data-kind="'+kind+'">'
+    + '<button type="button" class="sn" data-act="cyclek" aria-label="'+nm+'，点一下切换类型">'+setLabel(sets, i)+'</button>'
+    + '<div class="grp"><button type="button" data-act="wdec" aria-label="减重量">−</button>'
+    + '<input class="win" type="text" inputmode="decimal" autocomplete="off" value="'+wv+'">'
+    + '<button type="button" data-act="winc" aria-label="加重量">+</button></div>'
+    + '<div class="grp"><button type="button" data-act="rdec" aria-label="减次数">−</button>'
+    + '<input class="rin" type="text" inputmode="numeric" autocomplete="off" value="'+rv+'">'
+    + '<button type="button" data-act="rinc" aria-label="加次数">+</button></div>'
+    + (total > 1 ? '<button type="button" class="rmset" data-act="rmset" aria-label="删除这组">×</button>' : '<span></span>')
+    + '</div>';
+}
+function cardHTML(day, item, idx, total){
+  const st = ensureEx(day, item);
+  const variant = findVar(item, st.v);
+  const target = variant.t || item.t;
+  const prev = prevEntry(item.k, todayKey(), variant.id);
+  let hint;
+  if (prev){
+    hint = '上次（'+wkLabel(prev.date)+' · '+fmtDate(prev.date)+'）：<b>'+esc(fmtSets(prev.sets, variant))+'</b>';
+    const pr = progressFrom(prev);
+    if (pr && pr.up && !variant.bw) hint += '<br><span class="upnote">上次有一组超过15次 → 今天加重到 '+esc(fmtW(pr.w, variant))+' '+esc(variant.u)+'</span>';
+    else if (pr && pr.up) hint += '<br><span class="upnote">上次有一组超过15次 → 今天加点负重或换更难的动作</span>';
+  } else {
+    const sw = variant.bw && variant.w === 0 ? '自重' : variant.w + ' ' + variant.u;
+    hint = '建议起始重量：<b>'+esc(sw)+'</b>（只是参考）— 选一个第一组能做10–15次的重量';
+  }
+  (st.sets || []).forEach(function(s, i){
+    if (s.k || s.r == null) return;
+    if (s.r <= 5 && i < st.sets.length - 1) hint += '<br><span class="lownote">第'+(i+1)+'组只做了'+s.r+'次 → 下一组减重（已自动降低约20%）</span>';
+    if (s.r > 15) hint += '<br><span class="upnote">第'+(i+1)+'组超过15次 → 下周加重</span>';
+  });
+  let head = '';
+  if (editing){
+    head = '<div class="editbar">'
+      + '<button type="button" class="iconbtn" data-act="moveup" aria-label="上移"'+(idx===0?' disabled':'')+'>↑</button>'
+      + '<button type="button" class="iconbtn" data-act="movedn" aria-label="下移"'+(idx===total-1?' disabled':'')+'>↓</button>'
+      + '<span class="spacer"></span>'
+      + '<button type="button" class="rmex" data-act="rmex">移除</button></div>'
+      + '<div class="moverow"><span class="lbl">训练日</span>'
+      + DAYS.map(function(d){
+          return '<button type="button" class="movechip'+(d===day?' on':'')+'" data-act="moveday" data-md="'+d+'">'+esc(dayLabel(d))+'</button>';
+        }).join('')
+      + '</div>';
+  }
+  let chips = '';
+  if (item.vars.length > 1){
+    chips = '<div class="vrow">' + item.vars.map(function(v){
+      return '<button type="button" class="vchip'+(v.id===st.v?' on':'')+'" data-act="variant" data-vid="'+esc(v.id)+'">'+esc(v.n)+'</button>';
+    }).join('') + '</div>';
+  }
+  let body;
+  if (!st.skip){
+    body = chips + '<div class="hint">'+hint+'</div>'
+      + '<div class="modebar"><button type="button" class="vchip'+(isMyo(st)?' on':'')+'" data-act="myomode">休息暂停法</button>'
+      + '<span class="key">点序号 → <b>m</b> 暂停组 · <i>↘</i> 递减组</span></div>'
+      + '<div class="sethead"><span></span><span>重量 ('+esc(variant.u)+')</span><span>次数</span><span></span></div>'
+      + st.sets.map(function(r,i){ return setRowHTML(r, i, st.sets.length, st.sets); }).join('');
+  } else {
+    body = '<div class="hint">今天标记为没做 — 点下面的按钮可撤销。</div>';
+  }
+  return '<div class="card'+(st.skip?' skipped':'')+'" data-hue="'+esc(day)+'" style="--hue:'+dayHue(day)+'" data-k="'+esc(item.k)+'">'
+    + head
+    + '<div class="chead"><span class="cname">'+esc(item.n)+'</span>'
+    + '<span class="target">目标 <b>'+esc(target)+'</b><span class="mg">'+esc(item.m)+'</span></span></div>'
+    + body
+    + '<div class="cfoot">'
+    + (st.skip ? '' : '<button type="button" class="addset" data-act="addset">+ 组</button>'
+        + '<button type="button" class="addset kind" data-act="addmyo">+ 暂停组</button>'
+        + '<button type="button" class="addset kind" data-act="adddrop">+ 递减组</button>')
+    + '<button type="button" class="skipbtn'+(st.skip?' on':'')+'" data-act="skip">'+(st.skip?'没做 ✓':'没做')+'</button>'
+    + '</div></div>';
+}
+function addFormHTML(day){
+  const defT = day === 'legs' ? '12–15' : '8–10';
+  return '<div class="addform" id="addform">'
+    + '<h4>新动作 · '+esc(dayLabel(day))+'</h4>'
+    + '<div class="fld"><label for="nf_n">动作名称</label><input id="nf_n" type="text" autocomplete="off" placeholder="例如：器械推胸"></div>'
+    + '<div class="fld"><label for="nf_m">肌群（用于每周统计）</label><select id="nf_m">'
+      + MUSCLES.map(function(m){ return '<option value="'+esc(m)+'">'+esc(m)+'</option>'; }).join('')
+      + '<option value="其他">其他</option></select></div>'
+    + '<div class="f2">'
+      + '<div class="fld"><label for="nf_t">目标次数</label><input id="nf_t" type="text" value="'+defT+'"></div>'
+      + '<div class="fld"><label for="nf_s">组数</label><input id="nf_s" type="text" inputmode="numeric" value="4"></div>'
+    + '</div>'
+    + '<div class="f2">'
+      + '<div class="fld"><label for="nf_w">起始重量</label><input id="nf_w" type="text" inputmode="decimal" value="10"></div>'
+      + '<div class="fld"><label for="nf_u">单位</label><input id="nf_u" type="text" value="kg"></div>'
+    + '</div>'
+    + '<label class="chkrow"><input id="nf_bw" type="checkbox"> 自重动作 — 重量指<em>额外</em>负重</label>'
+    + '<div class="formfoot">'
+      + '<button type="button" data-act="addcancel">取消</button>'
+      + '<button type="button" class="primary" data-act="addsubmit">添加动作</button>'
+    + '</div></div>';
+}
+function removedHTML(day){
+  const list = hiddenItems(day);
+  if (!list.length) return '';
+  return '<div class="removed"><div class="rmhead">已从此训练日移除：'+esc(dayLabel(day))+'</div>'
+    + list.map(function(it){
+        return '<div class="rmrow"><span>'+esc(it.n)+'</span>'
+          + '<button type="button" data-act="restore" data-rk="'+esc(it.k)+'">恢复</button>'
+          + '<button type="button" class="del" data-act="purge" data-rk="'+esc(it.k)+'">删除</button></div>';
+      }).join('') + '</div>';
+}
+function renderDay(day){
+  const items = dayItems(day);
+  const planned = items.reduce(function(a,it){ return a + (it.s||0); }, 0);
+  let html = '<div class="dayline"><span class="d">'+esc(dayLabel(day))+'</span>'
+    + '<span class="rt"><span class="wk mono">'+wkLabel(todayKey())+' · '+fmtDate(todayKey())+'</span>'
+    + '<span class="wk mono">计划 '+planned+' 组</span>'
+    + (day === 'intro' ? '' : '<button type="button" class="editbtn'+(editing?' on':'')+'" data-act="edittoggle">'+(editing?'完成':'编辑动作')+'</button>')+'</span></div>';
+  html += editing
+    ? '<div class="rirnote edit">用 ↑↓ 调整顺序，用“训练日”按钮把动作移到另一天，或把它从这一天移除。<b>移除</b>会保留记录，可以撤销；<b>删除</b>（在已移除列表里）会永久删掉这个动作和它的记录。</div>'
+    : '<div class="rirnote">'+phaseNote(todayKey())+(day === 'intro' ? '' : '<br><span class="hold">动作还没定的话，点动作下面的选项换成别的器械或动作。</span>')+'</div>';
+  if (!items.length) html += '<p class="hnone">这一天还没有动作 — 在下面添加。</p>';
+  items.forEach(function(it, i){ html += cardHTML(day, it, i, items.length); });
+  if (day !== 'intro') html += adding ? addFormHTML(day)
+                 : '<button type="button" class="addex" data-act="addopen">+ 给'+esc(dayLabel(day))+'添加动作</button>';
+  if (editing) html += removedHTML(day);
+  document.getElementById('view').innerHTML = html;
+  if (adding){ const el = document.getElementById('nf_n'); if (el) el.focus(); }
+}
+
+/* ---------- Weeks ---------- */
+function weeksHTML(){
+  const thisWeek = weekStart(todayKey());
+  const wk = shiftWeek(thisWeek, weekOffset);
+  const logged = loggedByMuscle(wk);
+  const planned = plannedByMuscle();
+  const wn = weekNo(wk);
+
+  let html = '<div class="weeknav">'
+    + '<button type="button" data-act="wprev" aria-label="上一周">◀</button>'
+    + '<span class="wlabel"><b>'+(wn >= 1 ? '第'+wn+'周' : (wn === 0 ? '入门周' : '更早'))+'</b>'
+    + '<span>'+fmtShort(wk)+' – '+fmtShort(shiftDays(wk,6))+'</span></span>'
+    + '<button type="button" data-act="wnext" aria-label="下一周"'+(weekOffset < 0 ? '' : ' disabled')+'>▶</button>'
+    + '</div>';
+
+  const muscles = MUSCLES.concat(['其他']).filter(function(m){ return planned[m] || logged[m]; });
+  let totalDone = 0, totalPlan = 0;
+  muscles.forEach(function(m){ totalDone += (logged[m]||0); totalPlan += (planned[m]||0); });
+
+  html += '<div class="volblock"><div class="volhead"><span>各肌群组数</span><span>'+fmtN(totalDone)+' / '+totalPlan+'</span></div>';
+  if (!muscles.length){
+    html += '<p class="vnone">还没有计划或记录。</p>';
+  } else {
+    muscles.forEach(function(m){
+      const done = logged[m] || 0, plan = planned[m] || 0;
+      const pct = plan ? Math.min(100, Math.round(done/plan*100)) : (done ? 100 : 0);
+      html += '<div class="vrowm"><div class="vtop"><span class="mn">'+esc(m)+'</span>'
+        + '<span class="vn">'+fmtN(done)+' <i>/ '+plan+'</i></span></div>'
+        + '<div class="bar"><i class="'+(plan && done>=plan ? 'full' : '')+'" style="width:'+pct+'%"></i></div></div>';
+    });
+  }
+  html += '<p class="note">暂停小组按⅔组计算，递减组按½组计算。</p></div>';
+
+  const wkEnd = shiftWeek(wk, 1);
+  const sessions = allSessionsSorted().filter(function(s){ return s.date >= wk && s.date < wkEnd; })
+                                      .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  if (!sessions.length){
+    html += '<p class="hnone">这周还没有训练记录。</p>';
+  } else {
+    sessions.forEach(function(sess){
+      let rows = '';
+      dayItems(sess.day).concat(everyItem().filter(function(it){ return sess.ex[it.k] && dayFor(it.k) !== sess.day; }))
+        .forEach(function(item){
+          const e = sess.ex[item.k];
+          if (!e) return;
+          const variant = findVar(item, e.v);
+          if (e.skip){ rows += '<div class="hrow"><span class="hdate">'+esc(item.n)+'</span><span class="hskip">没做</span></div>'; return; }
+          const logged2 = (e.sets||[]).filter(function(s){ return s.r != null; });
+          if (!logged2.length) return;
+          rows += '<div class="hrow"><span class="hdate">'+esc(item.n)+'</span>'
+            + '<span class="hsets">'+esc(fmtSets(logged2, variant))+'</span></div>';
+        });
+      if (rows) html += '<div class="hblock"><h3>'+esc(dayLabel(sess.day))+'<em>'+fmtDate(sess.date)+'</em></h3>'+rows+'</div>';
+    });
+  }
+  document.getElementById('view').innerHTML = html;
+}
+
+/* ---------- History ---------- */
+function diagHTML(){
+  const y = function(b, t){ return '<span class="'+(b?'ok':'no')+'">'+(b?'是':'否')+'</span>' + (t ? ' — '+esc(t) : ''); };
+  return '<div class="diag">'
+    + '<div>离线可用：' + y(swOK === true, swOK === null ? '还在准备中 — 请在有网络时打开一次' : (swOK ? '' : '这个浏览器不支持')) + '</div>'
+    + '<div>手机存储：' + y(lsOK !== false, lsOK === false ? '被阻止 — 请直接在 Safari 中打开链接' : '') + '</div>'
+    + '<div>上次保存：' + (state.savedAt ? esc(new Date(state.savedAt).toLocaleString('zh-CN')) : '<span class="no">从未</span>') + '</div>'
+    + (lastErr ? '<div>上次错误：<span class="no">'+esc(lastErr)+'</span></div>' : '')
+    + '</div>';
+}
+function historyHTML(){
+  let day = histDay;
+  const histDays = DAYS.concat(state.days.filter(function(d){
+    return d.gone && Object.keys(state.sessions).some(function(k){ return state.sessions[k].day === d.id && sessionHasContent(state.sessions[k]); });
+  }).map(function(d){ return d.id; }));
+  if (histDays.indexOf(day) < 0){ day = histDay = histDays[0] || day; }
+  let html = '<div class="hchips">' + histDays.map(function(d){
+    return '<button type="button" data-act="hday" data-hd="'+d+'" class="'+(d===day?'on':'')+'">'+esc(dayLabel(d))+'</button>';
+  }).join('') + '</div>';
+
+  const items = everyItem().filter(function(it){ return dayFor(it.k) === day && !isPurged(it.k); });
+  const sessions = allSessionsSorted();
+  let any = '';
+  orderItems(day, items).forEach(function(item){
+    let rows = '';
+    sessions.forEach(function(sess){
+      const e = sess.ex[item.k];
+      if (!e) return;
+      const variant = findVar(item, e.v);
+      const dateBit = '<span class="hdate">'+wkLabel(sess.date)+' · '+fmtDate(sess.date)+'</span>';
+      const clearBtn = '<button type="button" class="hdel" data-act="hdel" data-hk="'+esc(skey(sess.day,sess.date))+'" data-ek="'+esc(item.k)+'">清除</button>';
+      if (e.skip){ rows += '<div class="hrow">'+dateBit+'<span class="hskip">没做</span>'+clearBtn+'</div>'; return; }
+      const logged = (e.sets||[]).filter(function(s){ return s.r != null; });
+      if (!logged.length) return;
+      const prevE = prevEntry(item.k, sess.date, e.v);
+      let delta = '';
+      if (prevE){
+        const a = topW(logged), b = topW(prevE.sets);
+        if (a != null && b != null){
+          const d = Math.round((a-b)*100)/100;
+          if (d > 0) delta = '<span class="delta up">▲ +'+d+'</span>';
+          else if (d < 0) delta = '<span class="delta dn">▼ '+d+'</span>';
+          else delta = '<span class="delta eq">=</span>';
+        }
+      }
+      rows += '<div class="hrow">'+dateBit
+        + '<span class="hsets">'+esc(fmtSets(logged, variant))
+        + (item.vars.length>1 ? ' <span class="hvar">('+esc(variant.n)+')</span>' : '') + '</span>'
+        + delta + clearBtn + '</div>';
+    });
+    if (rows) any += '<div class="hblock"><h3>'+esc(item.n)+(isHidden(item.k)?'<em>已移除</em>':'')+'</h3>'+rows+'</div>';
+  });
+  html += any || '<p class="hnone">'+esc(dayLabel(day))+'还没有记录 — 保存第一次训练后会显示在这里。</p>';
+
+  html += '<details class="panel"><summary>备份与恢复</summary>'
+    + '<p class="note">把这段文字复制保存到安全的地方（备忘录、微信发给自己等）— 这是你全部的训练记录，可以在下面粘贴回来恢复。</p>'
+    + '<textarea id="bkout" readonly></textarea>'
+    + '<div class="bkrow"><button type="button" data-act="bkcopy">复制备份</button><button type="button" data-act="bkfile">保存备份文件</button></div>'
+    + '<textarea id="bkin" placeholder="在这里粘贴备份…"></textarea>'
+    + '<div class="bkrow"><button type="button" data-act="bkimport">导入（会覆盖全部记录）</button><label class="bkfile">读取备份文件<input type="file" id="bkfilein" accept=".json,.txt,application/json,text/plain" hidden></label></div>'
+    + '</details>'
+    + '<details class="panel"><summary>数据保存在哪里</summary>' + diagHTML()
+    + '<p class="note">训练记录只保存在这部手机上（主屏幕上的这个应用里），没有网络也能用，不会同步到其他设备。请时不时用上面的“保存备份文件”，把文件存到“文件”或 iCloud 云盘。如果删除主屏幕图标，记录也会一起删除。</p><p class="note">版本 2026.11.17-1</p>'
+    + '</details>';
+  document.getElementById('view').innerHTML = html;
+  const out = document.getElementById('bkout');
+  if (out) out.value = JSON.stringify(state);
+}
+
+/* ---------- Day manager ---------- */
+function exCount(id){ return everyItem().filter(function(it){ return dayFor(it.k) === id && !isHidden(it.k) && !isPurged(it.k); }).length; }
+function wdSelect(cls, id, wd){
+  return '<select class="'+cls+'" data-id="'+esc(id)+'" aria-label="星期"><option value="">不固定</option>'
+    + WDN.map(function(n, i){ return '<option value="'+i+'"'+(wd === i ? ' selected' : '')+'>'+n+'</option>'; }).join('')
+    + '</select>';
+}
+function daysHTML(){
+  const live = state.days.filter(function(d){ return !d.gone; });
+  let html = '<div class="dhead">训练日</div>'
+    + '<p class="rirnote">可以改名、设置星期几自动打开、调整顺序，或添加和删除训练日。点圆点可以换颜色。'
+    + '删除训练日会保留它的历史记录，也可以在下面恢复。想保留某个动作的话，先把它移到别的训练日（编辑动作 › 训练日）。</p>'
+    + '<div class="daylist">';
+  live.forEach(function(d, i){
+    const n = exCount(d.id);
+    html += '<div class="drow" style="--hue:'+dayHue(d.id)+'">'
+      + '<button type="button" class="sw" data-act="dcol" data-id="'+esc(d.id)+'" aria-label="换颜色"></button>'
+      + '<input class="dname" data-id="'+esc(d.id)+'" type="text" value="'+esc(d.label)+'" maxlength="16" autocomplete="off">'
+      + wdSelect('dwd', d.id, d.wd)
+      + '<span class="acts">'
+      + '<button type="button" data-act="dup" data-id="'+esc(d.id)+'" aria-label="上移"'+(i===0?' disabled':'')+'>↑</button>'
+      + '<button type="button" data-act="ddown" data-id="'+esc(d.id)+'" aria-label="下移"'+(i===live.length-1?' disabled':'')+'>↓</button>'
+      + (live.length > 1 ? '<button type="button" class="del" data-act="ddel" data-id="'+esc(d.id)+'" aria-label="删除训练日">✕</button>' : '')
+      + '</span>'
+      + '<span class="meta">'+n+' 个动作'+'</span></div>';
+  });
+  html += '</div><div class="newday">'
+    + '<input id="nd_n" type="text" placeholder="新训练日名称" maxlength="16" autocomplete="off">'
+    + wdSelect('', '', null).replace('<select class=""', '<select id="nd_wd"')
+    + '<button type="button" data-act="dadd">添加</button></div>';
+  const gone = state.days.filter(function(d){ return d.gone; });
+  if (gone.length){
+    html += '<div class="gonelist"><div class="rmhead">已删除的训练日</div>' + gone.map(function(d){
+      return '<div class="grow"><span>'+esc(d.label)+'</span><button type="button" data-act="drestore" data-id="'+esc(d.id)+'">恢复</button></div>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('view').innerHTML = html;
+}
+function dayMetaChanged(){ markMeta(); syncDays(); renderTabs(); render(); doSave(true); }
+
+/* ---------- Shell ---------- */
+function render(){
+  if (DAYS.indexOf(tab) < 0 && tab !== 'hist' && tab !== 'weeks' && tab !== 'days') tab = DAYS[0] || 'days';
+  document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+  if (tab === 'hist') historyHTML();
+  else if (tab === 'weeks') weeksHTML();
+  else if (tab === 'days') daysHTML();
+  else renderDay(tab);
+  refreshPill();
+}
+function refreshPill(){
+  const pill = document.getElementById('pill');
+  const bar = document.getElementById('savebar');
+  if (dirty){
+    pill.textContent = '未保存'; pill.className = 'mono dirty';
+    bar.classList.add('show');
+    document.getElementById('savebtn').textContent =
+      '保存' + (DAYS.indexOf(tab) >= 0 ? ' · ' + dayLabel(tab) : '更改');
+  } else {
+    bar.classList.remove('show');
+    if (cloud === undefined){ pill.textContent = '…'; pill.className = 'mono'; }
+    else if (cloud){ pill.textContent = state.savedAt ? '已保存' : '就绪'; pill.className = 'mono saved'; }
+    else if (lsOK !== false){ pill.textContent = state.savedAt ? '已保存' : '就绪'; pill.className = 'mono saved'; }
+    else { pill.textContent = '无法保存'; pill.className = 'mono warn'; }
+  }
+}
+function showBanner(){
+  const b = document.getElementById('banner');
+  if (!b) return;
+  if (lsOK === false){
+    b.innerHTML = '<b>这个浏览器阻止了存储。</b>在这里记录的内容不会被保存。'
+      + '请从主屏幕图标打开应用（不要用无痕模式），或者每次训练后在“历史”里复制备份。';
+    b.classList.add('show');
+  } else if (!Object.keys(state.sessions).some(function(k){ return sessionHasContent(state.sessions[k]); }) && todayKey() < START){
+    b.innerHTML = '<b>欢迎！</b>记录只保存在这部手机上，没网也能用。'
+      + '先从“入门课”开始（11月22日周日）。';
+    b.classList.add('show');
+  } else b.classList.remove('show');
+}
+
+/* ---------- Edits ---------- */
+function parseW(v){ const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; }
+function parseR(v){ const n = parseInt(String(v), 10); return isNaN(n) || n < 0 ? null : n; }
+function commitCard(cardEl){
+  const day = tab;
+  if (DAYS.indexOf(day) < 0) return;
+  const item = itemByKey(cardEl.dataset.k);
+  if (!item) return;
+  const st = ensureEx(day, item);
+  if (!st.skip){
+    const sets = [];
+    cardEl.querySelectorAll('.set').forEach(function(row){
+      const o = { w: parseW(row.querySelector('.win').value), r: parseR(row.querySelector('.rin').value) };
+      if (row.dataset.kind) o.k = row.dataset.kind;
+      sets.push(o);
+    });
+    st.sets = sets;
+  }
+  curSession(day).u = Date.now();
+  dirty = true; persistLocal(); refreshPill();
+}
+function commitVisible(){
+  if (DAYS.indexOf(tab) < 0) return;
+  document.querySelectorAll('#view .card').forEach(function(c){ commitCard(c); });
+}
+function purgeExercise(k){
+  if (state.purged.indexOf(k) < 0) state.purged.push(k);
+  state.hidden = state.hidden.filter(function(x){ return x !== k; });
+  state.custom = state.custom.filter(function(it){ return it.k !== k; });
+  delete state.dayOf[k];
+  DAYS.forEach(function(d){ state.order[d] = (state.order[d]||[]).filter(function(x){ return x !== k; }); });
+  for (const key in state.sessions){
+    if (state.sessions[key].ex[k]){ delete state.sessions[key].ex[k]; state.sessions[key].u = Date.now(); }
+  }
+}
+
+/* ---------- Save ---------- */
+let saving = false;
+async function doSave(silent){
+  if (saving) return false;
+  commitVisible();
+  persistLocal();
+  const a = await artP;
+  cloud = a;
+  const prevSaved = state.savedAt || 0;
+  const stamp = Date.now();
+
+  if (!a || !templateSource()){
+    lastErr = lsOK ? '' : '浏览器阻止了存储';
+    if (lsOK){
+      state.savedAt = stamp; dirty = false; persistLocal();
+      if (!silent) toast('已保存 ✓');
+    } else if (!silent) toast('这里无法保存 — 请在“历史”里复制备份');
+    refreshPill(); showBanner();
+    return false;
+  }
+
+  saving = true;
+  const btn = document.getElementById('savebtn');
+  if (btn){ btn.disabled = true; btn.textContent = '保存中…'; }
+  let ok = false;
+  try {
+    state.savedAt = stamp;
+    const doc = buildDoc();
+    if (!doc) throw { code:'transform_error', message:'could not rebuild page' };
+    persistLocal();
+    await a.publish(doc);
+    lastSaveAt = stamp; lastErr = '';
+    dirty = false; persistLocal();
+    ok = true;
+    if (!silent) toast('已保存 ✓');
+  } catch (e){
+    state.savedAt = prevSaved; persistLocal();
+    const c = (e && e.code) ? e.code : 'unknown';
+    lastErr = c + (e && e.message ? ' — ' + e.message : '');
+    if (c === 'conflict'){ if (!silent) toast('在别处打开过 — 正在载入最新版本'); }
+    else if (c === 'rate_limited'){ if (!silent) toast('保存太频繁 — 请等一分钟再保存'); }
+    else if (c === 'not_writer' || c === 'not_granted' || c === 'not_declared' || c === 'capability_disabled' || c === 'capability_removed'){
+      cloud = null;
+      if (!silent) toast('这里无法保存 — 请在“历史”里复制备份');
+    }
+    else if (c === 'too_large'){ if (!silent) toast('记录太大无法保存 — 请在“历史”里清除一些旧记录'); }
+    else if (!silent) toast('保存失败（' + c + '）— 已保留在手机上，请再试一次');
+  }
+  saving = false;
+  if (btn) btn.disabled = false;
+  refreshPill(); showBanner();
+  return ok;
+}
+
+/* ---------- Toast ---------- */
+let toastT = null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+/* ---------- Events ---------- */
+document.getElementById('tabs').addEventListener('click', function(ev){
+  const b = ev.target.closest('button[data-tab]');
+  if (!b) return;
+  commitVisible();
+  tab = b.dataset.tab;
+  editing = false; adding = false;
+  rememberTab();
+  render();
+});
+document.getElementById('savebtn').addEventListener('click', function(){ doSave(false); });
+
+document.getElementById('view').addEventListener('input', function(ev){
+  const card = ev.target.closest('.card');
+  if (card && (ev.target.classList.contains('win') || ev.target.classList.contains('rin'))) commitCard(card);
+});
+
+document.getElementById('view').addEventListener('click', function(ev){
+  const btn = ev.target.closest('button[data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  const card = btn.closest('.card');
+  const day = tab;
+
+  /* weeks */
+  if (act === 'wprev'){ weekOffset--; weeksHTML(); return; }
+  if (act === 'wnext'){ if (weekOffset < 0) weekOffset++; weeksHTML(); return; }
+
+  /* day manager */
+  if (act === 'dadd'){
+    const nm = document.getElementById('nd_n').value.trim();
+    if (!nm){ toast('请给训练日起个名字'); document.getElementById('nd_n').focus(); return; }
+    const wv = document.getElementById('nd_wd').value;
+    const used = state.days.map(function(d){ return d.c; });
+    let c = 0; while (used.indexOf(c) >= 0 && c < HUES.length) c++;
+    const id = 'd' + Date.now().toString(36);
+    state.days.push({ id:id, label:nm, wd: wv === '' ? null : parseInt(wv, 10), c: c % HUES.length });
+    state.order[id] = [];
+    dayMetaChanged(); toast('已添加' + nm + ' — 打开它来添加动作'); return;
+  }
+  if (act === 'dup' || act === 'ddown'){
+    const live = state.days.filter(function(d){ return !d.gone; });
+    const i = live.findIndex(function(d){ return d.id === btn.dataset.id; });
+    const j = act === 'dup' ? i-1 : i+1;
+    if (i < 0 || j < 0 || j >= live.length) return;
+    const a = state.days.indexOf(live[i]), b = state.days.indexOf(live[j]);
+    const t = state.days[a]; state.days[a] = state.days[b]; state.days[b] = t;
+    dayMetaChanged(); return;
+  }
+  if (act === 'dcol'){
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    d.c = (d.c + 1) % HUES.length; dayMetaChanged(); return;
+  }
+  if (act === 'ddel'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.classList.add('arm'); btn.textContent = '删除？';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = '✕'; }, 2500);
+      return;
+    }
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    d.gone = true; dayMetaChanged(); toast(d.label + '已删除 — 需要的话可以在下面恢复'); return;
+  }
+  if (act === 'drestore'){
+    const d = dayObj(btn.dataset.id); if (!d) return;
+    delete d.gone; dayMetaChanged(); toast(d.label + '已恢复'); return;
+  }
+
+  /* history */
+  if (act === 'hday'){ histDay = btn.dataset.hd; historyHTML(); return; }
+  if (act === 'bkcopy'){
+    const out = document.getElementById('bkout');
+    out.focus(); out.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){}
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(out.value).then(function(){ toast('备份已复制'); },
+        function(){ toast(ok ? '备份已复制' : '请手动选中文字并复制'); });
+    } else toast(ok ? '备份已复制' : '请手动选中文字并复制');
+    return;
+  }
+  if (act === 'bkfile'){
+    try {
+      const blob = new Blob([JSON.stringify(state)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'iron-ledger-backup-' + todayKey() + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+    } catch(e){ toast('无法生成文件 — 请改用“复制备份”'); }
+    return;
+  }
+  if (act === 'bkimport'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.textContent = '再点一次将覆盖全部记录';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.textContent = '导入（会覆盖全部记录）'; }, 3000);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(document.getElementById('bkin').value);
+      if (!parsed || typeof parsed.sessions !== 'object') throw 0;
+      state = normalize(parsed); state.savedAt = 0; dirty = true;
+      syncDays(); renderTabs();
+      persistLocal(); render();
+      toast('已导入 — 点“保存”存下来');
+    } catch(e){ toast('这不是有效的备份'); }
+    return;
+  }
+  if (act === 'hdel'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.classList.add('arm'); btn.textContent = '确定？';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = '清除'; }, 2500);
+      return;
+    }
+    const sess = state.sessions[btn.dataset.hk];
+    if (sess && sess.ex[btn.dataset.ek]){ delete sess.ex[btn.dataset.ek]; sess.u = Date.now(); dirty = true; persistLocal(); }
+    historyHTML(); refreshPill();
+    return;
+  }
+
+  /* day-level */
+  if (act === 'edittoggle'){ commitVisible(); editing = !editing; adding = false; renderDay(day); return; }
+  if (act === 'addopen'){ commitVisible(); adding = true; renderDay(day); return; }
+  if (act === 'addcancel'){ adding = false; renderDay(day); return; }
+  if (act === 'addsubmit'){
+    const name = document.getElementById('nf_n').value.trim();
+    if (!name){ toast('请给动作起个名字'); document.getElementById('nf_n').focus(); return; }
+    const muscle = document.getElementById('nf_m').value;
+    const t = document.getElementById('nf_t').value.trim() || (day === 'legs' ? '12–15' : '8–10');
+    let sets = parseInt(document.getElementById('nf_s').value, 10);
+    if (isNaN(sets) || sets < 1) sets = 4;
+    if (sets > 12) sets = 12;
+    let w = parseW(document.getElementById('nf_w').value);
+    if (w == null || w < 0) w = 0;
+    const bw = document.getElementById('nf_bw').checked;
+    const unit = document.getElementById('nf_u').value.trim() || (bw ? 'kg added' : 'kg');
+    const key = 'c' + Date.now().toString(36) + Math.floor(Math.random()*900+100);
+    state.custom.push({ k:key, n:name, m:muscle, t:t, s:sets, nday:day, custom:true,
+                        vars:[{ id:'main', n:'默认', w:w, u:unit, bw:bw }] });
+    const base = (state.order[day] && state.order[day].length) ? state.order[day].slice() : dayItems(day).map(function(x){ return x.k; });
+    state.order[day] = base.filter(function(x){ return x !== key; }).concat([key]);
+    markMeta(); adding = false;
+    renderDay(day); refreshPill();
+    toast('已添加“'+name+'”');
+    return;
+  }
+  if (act === 'restore'){
+    state.hidden = state.hidden.filter(function(x){ return x !== btn.dataset.rk; });
+    markMeta(); renderDay(day); refreshPill(); toast('已恢复');
+    return;
+  }
+  if (act === 'purge'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.classList.add('arm'); btn.textContent = '永久删除？';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = '删除'; }, 3000);
+      return;
+    }
+    const it = itemByKey(btn.dataset.rk);
+    purgeExercise(btn.dataset.rk);
+    markMeta(); renderDay(day); refreshPill();
+    toast('已删除“'+(it ? it.n : '动作')+'”及其记录');
+    return;
+  }
+
+  /* card-level */
+  if (!card) return;
+  const item = itemByKey(card.dataset.k);
+  if (!item) return;
+  const st = ensureEx(day, item);
+
+  if (act === 'moveday'){
+    const to = btn.dataset.md;
+    if (to === day) return;
+    commitVisible();
+    state.dayOf[item.k] = to;
+    DAYS.forEach(function(d){ state.order[d] = (state.order[d]||[]).filter(function(x){ return x !== item.k; }); });
+    const base = (state.order[to] && state.order[to].length) ? state.order[to].slice() : dayItems(to).map(function(x){ return x.k; });
+    state.order[to] = base.filter(function(x){ return x !== item.k; }).concat([item.k]);
+    markMeta(); renderDay(day); refreshPill();
+    toast('“'+item.n+'”已移到'+dayLabel(to));
+    return;
+  }
+  if (act === 'rmex'){
+    if (!btn.dataset.arm){
+      btn.dataset.arm = '1'; btn.classList.add('arm'); btn.textContent = '点击确认';
+      setTimeout(function(){ if (!btn.isConnected) return; delete btn.dataset.arm; btn.classList.remove('arm'); btn.textContent = '移除'; }, 3000);
+      return;
+    }
+    commitVisible();
+    if (!isHidden(item.k)) state.hidden.push(item.k);
+    markMeta(); renderDay(day); refreshPill();
+    toast('已移除“'+item.n+'” — 可在底部恢复或删除');
+    return;
+  }
+  if (act === 'moveup' || act === 'movedn'){
+    commitVisible();
+    const keys = dayItems(day).map(function(x){ return x.k; });
+    const i = keys.indexOf(item.k);
+    const j = act === 'moveup' ? i-1 : i+1;
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    const tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
+    state.order[day] = keys;
+    markMeta(); renderDay(day); refreshPill();
+    return;
+  }
+  if (act === 'variant'){
+    commitCard(card);
+    st.v = btn.dataset.vid;
+    if (!st.sets.some(function(s){ return s.r != null; })) st.sets = prefillRows(item, findVar(item, st.v));
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'addset' || act === 'addmyo' || act === 'adddrop'){
+    commitCard(card);
+    const last = st.sets[st.sets.length-1];
+    const w = last ? last.w : findVar(item, st.v).w;
+    if (act === 'addset') st.sets.push({ w: w, r: null });
+    if (act === 'addmyo') st.sets.push({ w: w, r: null, k: 'm' });
+    if (act === 'adddrop') st.sets.push({ w: dropW(w), r: null, k: 'd' });
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'cyclek'){
+    commitCard(card);
+    const i = parseInt(btn.closest('.set').dataset.i, 10);
+    const s = st.sets[i];
+    const next = !s.k ? 'm' : s.k === 'm' ? 'd' : '';
+    if (next) s.k = next; else delete s.k;
+    if (next === 'd' && !s.r && i > 0 && s.w === st.sets[i-1].w) s.w = dropW(s.w);
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'myomode'){
+    commitCard(card);
+    if (isMyo(st)){
+      st.sets.forEach(function(s){ if (s.k === 'm') delete s.k; });
+    } else {
+      /* first set stays the starter; the remaining planned sets become mini-sets */
+      st.sets.forEach(function(s, i){ if (i > 0 && !s.k && s.r == null) s.k = 'm'; });
+      if (st.sets.length < 2) st.sets.push({ w: st.sets[0] ? st.sets[0].w : findVar(item, st.v).w, r: null, k: 'm' });
+    }
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'rmset'){
+    commitCard(card);
+    const i = parseInt(btn.closest('.set').dataset.i, 10);
+    if (st.sets.length > 1) st.sets.splice(i, 1);
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+  if (act === 'skip'){
+    commitCard(card);
+    st.skip = !st.skip;
+    curSession(day).u = Date.now(); dirty = true; persistLocal();
+    renderDay(day); refreshPill(); return;
+  }
+
+  const row = btn.closest('.set');
+  if (row){
+    const wIn = row.querySelector('.win'), rIn = row.querySelector('.rin');
+    const w = parseW(wIn.value), r = parseR(rIn.value);
+    const stepFor = function(v){ return (v != null && v >= 10) ? 2.5 : 1.25; };
+    if (act === 'winc') wIn.value = Math.round(((w||0) + stepFor(w)) * 100) / 100;
+    if (act === 'wdec') wIn.value = Math.max(0, Math.round(((w||0) - stepFor(w)) * 100) / 100);
+    if (act === 'rinc') rIn.value = (r||0) + 1;
+    if (act === 'rdec') rIn.value = Math.max(0, (r||0) - 1) || (r === 1 ? 0 : '');
+    commitCard(card);
+  }
+});
+
+document.getElementById('view').addEventListener('change', function(ev){
+  if (ev.target.classList.contains('rin')){
+    const card = ev.target.closest('.card'), row = ev.target.closest('.set');
+    if (!card || !row || DAYS.indexOf(tab) < 0) return;
+    const r = parseR(ev.target.value);
+    if (r == null || r > 5 || row.dataset.kind) return;
+    commitCard(card);
+    const item = itemByKey(card.dataset.k); if (!item) return;
+    const st = curSession(tab).ex[item.k]; if (!st) return;
+    const i = parseInt(row.dataset.i, 10), w = st.sets[i] && st.sets[i].w;
+    let changed = false;
+    for (let j=i+1;j<st.sets.length;j++){
+      const s = st.sets[j];
+      if (s.r == null && !s.k && s.w != null && w != null && s.w >= w){ s.w = lowerW(w); changed = true; }
+    }
+    if (changed){ curSession(tab).u = Date.now(); dirty = true; persistLocal(); renderDay(tab); refreshPill(); toast('只有'+r+'次 — 后面几组已减重'); }
+    return;
+  }
+  if (ev.target.classList.contains('dname') || ev.target.classList.contains('dwd')){
+    const d = dayObj(ev.target.dataset.id); if (!d) return;
+    if (ev.target.classList.contains('dname')){
+      const v = ev.target.value.trim();
+      if (!v){ ev.target.value = d.label; return; }
+      d.label = v;
+    } else { d.wd = ev.target.value === '' ? null : parseInt(ev.target.value, 10); d.wd2 = null; }
+    markMeta(); syncDays(); renderTabs(); doSave(true);
+    document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+    return;
+  }
+  if (ev.target.id !== 'bkfilein' || !ev.target.files || !ev.target.files[0]) return;
+  const r = new FileReader();
+  r.onload = function(){
+    const box = document.getElementById('bkin');
+    if (box){ box.value = String(r.result || ''); toast('文件已读取 — 点两次“导入”来替换记录'); }
+  };
+  r.readAsText(ev.target.files[0]);
+});
+
+/* Save automatically when you leave the app. */
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState !== 'hidden') return;
+  if (!dirty || saving) return;
+  if (Date.now() - lastSaveAt < 20000) return;
+  doSave(true);
+});
+
+/* ---------- Boot ---------- */
+(function boot(){
+  lsOK = testLS();
+  const seed = readSeed();
+  const localWrap = readLocal();
+  state = mergeStates(seed || blankState(), localWrap && localWrap.state);
+  dirty = computeDirty();
+  const intro = dayObj('intro');
+  if (intro && todayKey() >= START && !intro.retired){ intro.gone = true; intro.retired = true; markMeta(); }
+  syncDays(); renderTabs();
+  tab = initialTab();
+  if (DAYS.indexOf(tab) < 0 && tab !== 'hist' && tab !== 'weeks' && tab !== 'days') tab = DAYS[0] || 'days';
+  rememberTab();
+  render();
+  artP.then(function(a){
+    cloud = a;
+    refreshPill(); showBanner();
+    if (tab === 'hist') historyHTML();
+  });
+})();
+
+/* ---------- Offline ---------- */
+(function offline(){
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+  if (!('serviceWorker' in navigator)){ swOK = false; return; }
+  navigator.serviceWorker.register('sw.js').then(function(){
+    return navigator.serviceWorker.ready;
+  }).then(function(){ swOK = true; if (tab === 'hist') historyHTML(); })
+    .catch(function(){ swOK = false; });
+})();
+</script>
+<!--/BODY-->
+</body>
+</html>
