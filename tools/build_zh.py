@@ -26,6 +26,51 @@ rep('<html lang="en">', '<html lang="zh-CN">')
 resub(r'<title>.*?</title>', '<title>训练记录</title>')
 rep('<meta name="apple-mobile-web-app-title" content="Iron Ledger">', '<meta name="apple-mobile-web-app-title" content="训练记录">')
 
+# ================= blue theme =================
+rep("""    --bg: #EDEEE7;
+    --surface: #FFFFFF;
+    --surface-alt: #E3E5DC;
+    --ink: #191A16;
+    --ink-soft: #54564A;
+    --ink-faint: #83857A;
+    --line: #D6D8CD;
+    --accent: #B8441F;
+    --accent-ink: #FFFFFF;
+    --push: #B8441F;
+    --pull: #2F5D62;
+    --legs: #7A6323;
+    --smalls: #5A4A72;
+    --good: #3F6E3A;
+    --bad: #9A4230;""", """    --bg: #EAF0F7;
+    --surface: #FFFFFF;
+    --surface-alt: #DDE6F1;
+    --ink: #121A26;
+    --ink-soft: #4A5568;
+    --ink-faint: #7C8798;
+    --line: #CFDAE8;
+    --accent: #1F5FBF;
+    --accent-ink: #FFFFFF;
+    --push: #1F5FBF;
+    --pull: #0E7C9A;
+    --legs: #3B4CB8;
+    --smalls: #5A6FA8;
+    --good: #2F7A55;
+    --bad: #B23A3A;""")
+rep("""      --bg:#161713; --surface:#1E201A; --surface-alt:#262820;
+      --ink:#ECEDE6; --ink-soft:#ABAD9F; --ink-faint:#7B7D70; --line:#34362C;
+      --accent:#E2703E; --accent-ink:#16170F;
+      --push:#E2703E; --pull:#5CB4B9; --legs:#C7A94E; --smalls:#A992CE;
+      --good:#7CB876; --bad:#E08A72;""", """      --bg:#0F141C; --surface:#161D28; --surface-alt:#1E2734;
+      --ink:#E8EEF6; --ink-soft:#A6B3C4; --ink-faint:#74819A; --line:#2A3443;
+      --accent:#5B9BEF; --accent-ink:#0B1018;
+      --push:#5B9BEF; --pull:#4FC1D9; --legs:#8C9BFF; --smalls:#9DB0E0;
+      --good:#6CC08F; --bad:#E58080;""")
+rep("const HUES = ['#B8441F','#2F5D62','#7A6323','#5A4A72','#3F6E3A','#8A3B5C','#2E4A7A','#6B5B3E'];",
+    "const HUES = ['#1F5FBF','#0E7C9A','#3B4CB8','#2B6CB0','#4C7DBF','#1A4E8A','#3E8EC9','#5A6FA8'];")
+rep('<meta name="theme-color" content="#EDEEE7">', '<meta name="theme-color" content="#EAF0F7">')
+
+rep("border: 1px solid var(--bad); border-left: 3px solid var(--bad);", "border: 1px solid var(--accent); border-left: 3px solid var(--accent);")
+
 # ================= the programme =================
 PROGRAM_ZH = r"""const PROGRAM = {
   intro: { label:'入门课', items:[] },
@@ -123,7 +168,7 @@ rep("const WDN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];", "const WDN = ['�
 rep("""  return [ { id:'push', label:'Push', wd:1, c:0 }, { id:'pull', label:'Pull', wd:2, c:1 },
            { id:'legs', label:'Legs', wd:3, c:2 }, { id:'smalls', label:'Smalls', wd:5, c:3 } ];""",
     """  return [ { id:'intro', label:'入门课', wd:null, c:2 },
-           { id:'a', label:'训练A', wd:1, wd2:2, c:5 }, { id:'b', label:'训练B', wd:3, wd2:4, c:1 } ];""")
+           { id:'a', label:'训练A', wd:1, wd2:2, c:0 }, { id:'b', label:'训练B', wd:3, wd2:4, c:1 } ];""")
 rep("order:{push:[],pull:[],legs:[],smalls:[]}, days: defaultDays() };", "order:{intro:[],a:[],b:[]}, days: defaultDays() };")
 rep("""    if (!(typeof d.wd === 'number' && d.wd >= 0 && d.wd <= 6)) d.wd = null;""",
     """    if (!(typeof d.wd === 'number' && d.wd >= 0 && d.wd <= 6)) d.wd = null;
@@ -183,10 +228,12 @@ rep("""function prefillRows(item, variant){
 }
 function prefillRows(item, variant){
   const prev = prevEntry(item.k, todayKey(), variant.id);
-  const pr = prev ? progressFrom(prev) : null;
-  const w = pr ? pr.w : variant.w;
+  const done = prev ? prev.sets.filter(function(x){ return !x.k && x.w != null; }) : [];
   const rows = [];
-  for (let i=0;i<item.s;i++) rows.push({ w: w, r:null });
+  for (let i=0;i<item.s;i++){
+    const src = done[i] || done[done.length-1];
+    rows.push({ w: src ? src.w : variant.w, r:null });
+  }
   return rows;
 }""")
 
@@ -200,38 +247,26 @@ rep("""  if (prev){
 """  if (prev){
     hint = '上次（'+wkLabel(prev.date)+' · '+fmtDate(prev.date)+'）：<b>'+esc(fmtSets(prev.sets, variant))+'</b>';
     const pr = progressFrom(prev);
-    if (pr && pr.up && !variant.bw) hint += '<br><span class="upnote">上次有一组超过15次 → 今天加重到 '+esc(fmtW(pr.w, variant))+' '+esc(variant.u)+'</span>';
-    else if (pr && pr.up) hint += '<br><span class="upnote">上次有一组超过15次 → 今天加点负重或换更难的动作</span>';
+    if (pr && pr.up) hint += '<br><span class="upnote">上次有一组超过15次 → 加重！</span>';
   } else {
     const sw = variant.bw && variant.w === 0 ? '自重' : variant.w + ' ' + variant.u;
     hint = '建议起始重量：<b>'+esc(sw)+'</b>（只是参考）— 选一个第一组能做10–15次的重量';
   }
   (st.sets || []).forEach(function(s, i){
     if (s.k || s.r == null) return;
-    if (s.r <= 5 && i < st.sets.length - 1) hint += '<br><span class="lownote">第'+(i+1)+'组只做了'+s.r+'次 → 下一组减重（已自动降低约20%）</span>';
+    if (s.r <= 5 && i < st.sets.length - 1) hint += '<br><span class="lownote">第'+(i+1)+'组只做了'+s.r+'次 → 下一组减重！</span>';
     if (s.r > 15) hint += '<br><span class="upnote">第'+(i+1)+'组超过15次 → 下周加重</span>';
   });""")
 rep("  .myochip { margin-left: auto; }",
-    "  .myochip { margin-left: auto; }\n  .lownote { color: var(--bad); font-weight: 600; }\n  .upnote { color: var(--pull); font-weight: 600; }")
+    "  .myochip { margin-left: auto; }\n  .lownote { color: var(--bad); font-weight: 600; }\n  .upnote { color: var(--good); font-weight: 600; }")
 
 # ≤5 reps: lower the weight of the sets still to do
+# a set of <=5 or >15 reps shows its note straight away (no automatic weight change)
 rep("""document.getElementById('view').addEventListener('change', function(ev){""",
     """document.getElementById('view').addEventListener('change', function(ev){
-  if (ev.target.classList.contains('rin')){
-    const card = ev.target.closest('.card'), row = ev.target.closest('.set');
-    if (!card || !row || DAYS.indexOf(tab) < 0) return;
-    const r = parseR(ev.target.value);
-    if (r == null || r > 5 || row.dataset.kind) return;
-    commitCard(card);
-    const item = itemByKey(card.dataset.k); if (!item) return;
-    const st = curSession(tab).ex[item.k]; if (!st) return;
-    const i = parseInt(row.dataset.i, 10), w = st.sets[i] && st.sets[i].w;
-    let changed = false;
-    for (let j=i+1;j<st.sets.length;j++){
-      const s = st.sets[j];
-      if (s.r == null && !s.k && s.w != null && w != null && s.w >= w){ s.w = lowerW(w); changed = true; }
-    }
-    if (changed){ curSession(tab).u = Date.now(); dirty = true; persistLocal(); renderDay(tab); refreshPill(); toast('只有'+r+'次 — 后面几组已减重'); }
+  if (ev.target.classList.contains('rin') && DAYS.indexOf(tab) >= 0){
+    const r = parseR(ev.target.value), card = ev.target.closest('.card');
+    if (card && r != null && (r <= 5 || r > 15)){ commitCard(card); persistLocal(); renderDay(tab); refreshPill(); }
     return;
   }""")
 
@@ -414,7 +449,7 @@ assert "ironledger-zh-') === 0" in sw
 (out / 'sw.js').write_text(sw)
 import json, subprocess
 (out / 'manifest.webmanifest').write_text(json.dumps({"name":"训练记录","short_name":"训练记录","start_url":"./","scope":"./","display":"standalone",
-  "background_color":"#EDEEE7","theme_color":"#EDEEE7","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+  "background_color":"#EAF0F7","theme_color":"#EAF0F7","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},
   {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}, ensure_ascii=False, indent=2))
-subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('icons.py')), str(out), '#8A3B5C'], check=True)
+subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('icons.py')), str(out), '#1F5FBF'], check=True)
 print('built zh', VERSION)
